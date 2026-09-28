@@ -1,124 +1,62 @@
-\---
-
+---
 title: "REST Mail Submission Protocol"
-
 abbrev: "RMSP"
-
 docname: draft-tishkin-rmsp-latest
-
 category: info
 
-
-
 ipr: trust200902
-
 area: General
-
 workgroup: Independent Submission
-
 keyword: Internet-Draft
 
-
-
-stand\_alone: yes
-
-smart\_quotes: no
-
-pi: \[toc, sortrefs, symrefs]
-
-
+stand_alone: yes
+smart_quotes: no
+pi: [toc, sortrefs, symrefs]
 
 author:
-
-&#x20;-
-
-&#x20;   ins: D. Tishkin
-
-&#x20;   name: Dmitrii Tishkin
-
-&#x20;   organization: Independent
-
-&#x20;   email: hello@dmi03.com
-
-
+ -
+    ins: D. Tishkin
+    name: Dmitrii Tishkin
+    organization: Independent
+    email: hello@dmi03.com
 
 normative:
-
-&#x20; RFC2119:
-
-&#x20; RFC8174:
+  RFC2119:
+  RFC8174:
 
 informative:
 
 
-
-
-
-\--- abstract
-
-
+--- abstract
 
 TODO Abstract
 
 
+--- middle
 
-
-
-\--- middle
-
-
-
-\# Introduction
-
-
+# Introduction
 
 TODO Introduction
 
 
-
-
-
-\# Conventions and Definitions
-
-
+# Conventions and Definitions
 
 {::boilerplate bcp14-tagged}
 
 
-
-
-
-\# Security Considerations
-
-
+# Security Considerations
 
 TODO Security
 
 
-
-
-
-\# IANA Considerations
-
-
+# IANA Considerations
 
 This document has no IANA actions.
 
 
+--- back
 
-
-
-
-
-\--- back
-
-
-
-\# Acknowledgments
-
+# Acknowledgments
 {:numbered="false"}
 
-
-
 TODO acknowledge.
-
