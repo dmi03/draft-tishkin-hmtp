@@ -1,7 +1,7 @@
 ---
 title: "REST Mail Submission Protocol"
 abbrev: "RMSP"
-docname: draft-tishkin-rmsp
+docname: draft-tishkin-rmsp-latest
 category: info
 
 ipr: trust200902
