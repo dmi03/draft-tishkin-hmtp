@@ -41,6 +41,12 @@ normative:
   RFC7617:
   RFC6750:
   RFC5598:
+  RFC9460:
+  RFC5890:
+  RFC9113:
+  RFC9525:
+  RFC9111:
+  RFC9728:
 
 informative:
   RFC3207:
@@ -58,6 +64,9 @@ informative:
   RFC8552:
   RFC8792:
   RFC5598:
+  RFC6186:
+  RFC9114:
+  RFC4033:
 
 
 --- abstract
@@ -357,12 +366,169 @@ SMTP hops without conversion.
 
 # Discovery {#discovery}
 
+A server or Client locates the HMTP Endpoint of a domain in two
+steps.  It first queries DNS for the HMTP service record of the
+domain ({{dns-record}}) and then retrieves the Capabilities Document
+from the target host ({{capabilities-document}}).
 
-## DNS Record
+## DNS Record {#dns-record}
 
+A domain that supports HMTP publishes an SVCB resource record
+{{RFC9460}} at the following owner name:
+
+~~~
+_hmtp._tcp.<domain>
+~~~
+
+where `<domain>` is the domain part of an email address, in the form
+of A-labels {{RFC5890}} for internationalized domain names.
+
+The "_tcp" label is used for consistency with service records of
+other mail protocols {{RFC6186}}.  It does not restrict the transport
+protocol, which is determined by the "alpn" SvcParam.
+
+The record is interpreted according to {{RFC9460}} with the following
+rules:
+
+- The TargetName identifies the host that provides the HMTP Endpoint.
+  A TargetName of "." refers to the owner name without the
+  "_hmtp._tcp" prefix.
+
+- The "alpn" SvcParam MUST be present and MUST include at least one
+  HTTP protocol identifier.  Servers MUST support "h2" {{RFC9113}}
+  and MAY support "h3" {{RFC9114}}.
+
+- The "port" SvcParam indicates the TCP or UDP port of the HMTP
+  Endpoint.  If it is absent, port 443 is used.
+
+- Other SvcParams, such as "ech", are used as defined in {{RFC9460}}.
+
+- If multiple ServiceMode records are present, they are tried in
+  order of priority as specified in {{RFC9460}}.
+
+A Sending Server uses the domain of each Envelope Recipient to locate
+the Receiving Server.  A Client uses the domain of its own address to
+locate its Submission Server.
+
+When connecting to the target host, the server or Client MUST
+validate the TLS certificate of the host against the TargetName, as
+described in {{RFC9525}}.  DNS responses SHOULD be validated using
+DNSSEC {{RFC4033}} when available.  See {{security}} for the
+consequences of an unauthenticated DNS response.
+
+The result of the DNS query is interpreted as follows:
+
+- If the query returns one or more usable SVCB records, the domain
+  supports HMTP.
+
+- If the query returns a response indicating that the name does not
+  exist or that no SVCB records exist for it, the domain does not
+  support HMTP.  A Sending Server then proceeds as described in
+  {{smtp-fallback}}.
+
+- If the query fails for any other reason, such as a timeout or a
+  server failure, the result MUST be treated as a temporary failure.
+  The server MUST NOT conclude that the domain does not support HMTP.
+
+Results of DNS queries MAY be cached for the duration of their TTL.
 
 ## Capabilities Document
 
+
+The Capabilities Document describes the HMTP Endpoint of a host.  It
+is retrieved with an HTTP GET request to the well-known URI
+{{RFC8615}} "/.well-known/hmtp" on the target host and port
+identified by the DNS record.
+
+The response is a JSON object with the media type "application/json"
+and contains the following members:
+
+versions:
+: REQUIRED.  An array of strings listing the versions of HMTP
+  supported by the server.  This document defines version "1".
+
+endpoints:
+: REQUIRED.  A JSON object that maps each supported interaction to
+  the URI of its endpoint.  This document defines the following
+  members:
+
+  - "transfer": the endpoint for transfer ({{transfer}});
+  - "submission": the endpoint for submission ({{submission}});
+  - "identities": the endpoint that lists the addresses a Client is
+    authorized to use ({{identities}}).
+
+  At least one of "transfer" and "submission" MUST be present.  The
+  "identities" member MUST NOT be present unless "submission" is
+  present.  URIs MUST use the "https" scheme and MAY be relative, in
+  which case they are resolved against the URI of the Capabilities
+  Document.
+
+authentication:
+: REQUIRED if "submission" is present.  An array of strings listing
+  the authentication schemes accepted for submission, as described
+  in {{client-authentication}}.
+
+oauthResourceMetadata:
+: OPTIONAL.  The URI of the OAuth 2.0 Protected Resource Metadata
+  {{RFC9728}} of the server.  The URI MUST use the "https" scheme and
+  MAY be relative, in which case it is resolved against the URI of
+  the Capabilities Document.  If this member is absent, Clients
+  locate the metadata as specified in {{RFC9728}}.  The resource
+  identifier of a Submission Server is the origin of its submission
+  endpoint.
+
+limits:
+: OPTIONAL.  A JSON object describing limits of the server.  This
+  document defines "maxMessageSize", the maximum size of a Message in
+  octets, and "maxRecipients", the maximum number of Envelope
+  Recipients in one request.
+
+capabilities:
+: OPTIONAL.  A JSON object whose member names identify supported
+  extensions and whose values contain parameters of each extension.
+  Extensions are registered as described in {{iana}}.
+
+Recipients of the Capabilities Document MUST ignore members they do
+not understand.
+
+Servers SHOULD include caching information in the response, and
+recipients MAY cache the document as specified in {{RFC9111}}.
+
+If the Capabilities Document cannot be retrieved because of a
+connection failure or a 5xx status code, the result MUST be treated
+as a temporary failure.  If the server responds with any other error,
+or the document is not valid, the server or Client MUST NOT use HMTP
+with this host.
+
+The following example shows the DNS records and the Capabilities
+Document of a domain whose mail is handled by a provider:
+
+~~~ dns
+_hmtp._tcp.example.com.  3600 IN SVCB 1 hmtp.provider.example. (
+                                    alpn=h2,h3 )
+~~~
+
+~~~ http-message
+HTTP/1.1 200 OK
+Content-Type: application/json
+Cache-Control: max-age=86400
+
+{
+  "versions": ["1"],
+  "endpoints": {
+    "transfer": "/hmtp/v1/transfer",
+    "submission": "/hmtp/v1/submission",
+    "identities": "/hmtp/v1/identities"
+  },
+  "authentication": ["basic", "bearer"],
+  "oauthResourceMetadata": "/.well-known/oauth-protected-resource",
+  "limits": {
+    "maxMessageSize": 52428800,
+    "maxRecipients": 1000
+  },
+  "capabilities": {}
+}
+~~~
 
 # Data Model {#data-model}
 
@@ -379,7 +545,7 @@ SMTP hops without conversion.
 ## Capabilities
 
 
-# Message Transfer
+# Message Transfer {#transfer}
 
 
 ## Request
@@ -394,10 +560,13 @@ SMTP hops without conversion.
 # Message Submission {#submission}
 
 
-## Client Authentication
+## Client Authentication {#client-authentication}
 
 
 ## Authorization of Sender Addresses
+
+
+## Identities {#identities}
 
 
 # Authentication and Signing {#signing}
@@ -439,13 +608,13 @@ SMTP hops without conversion.
 # Implementation Status
 
 
-# Security Considerations
+# Security Considerations {#security}
 
 
 # Privacy Considerations
 
 
-# IANA Considerations
+# IANA Considerations {#iana}
 
 
 --- back
