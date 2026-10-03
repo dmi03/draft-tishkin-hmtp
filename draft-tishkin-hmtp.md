@@ -35,7 +35,6 @@ normative:
   RFC9110:
   RFC9421:
   RFC9457:
-  RFC9460:
   RFC9530:
   RFC6749:
   RFC7617:
@@ -63,7 +62,6 @@ informative:
   RFC9580:
   RFC8552:
   RFC8792:
-  RFC5598:
   RFC6186:
   RFC9114:
   RFC4033:
@@ -316,7 +314,7 @@ Messages it accepts.
 {{fig-flow}} shows the path of a Message from a Client to a
 recipient.
 
-~~~ aasvg
+~~~
 +--------+  submission   +------------+   transfer   +-----------+
 | Client | ------------> | Submission | -----------> | Receiving |
 |  (MUA) |    (HMTP)     |   Server   |    (HMTP)    |  Server   |
