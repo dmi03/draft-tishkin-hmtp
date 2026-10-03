@@ -279,14 +279,81 @@ A single server MAY act in more than one of these roles.
 In examples, long lines are wrapped as described in {{RFC8792}}.
 
 
-# Architecture
+# Architecture {#architecture}
 
+HMTP is an application protocol that uses HTTP {{RFC9110}} over TLS
+as its transport.  All HMTP requests are HTTP requests sent to an
+HMTP Endpoint.
 
-## Roles
+## Roles {#roles}
 
+Submission:
+: A Client sends a Message to its Submission Server.  The Client
+  authenticates to the Submission Server as described in
+  {{submission}}.
 
-## Message Flow
+Transfer:
+: A Sending Server sends a Message to a Receiving Server.  The
+  Sending Server signs each request on behalf of the Sending Domain,
+  and the Receiving Server verifies the signature as described in
+  {{signing}}.
 
+Both interactions use the same Data Model ({{data-model}}).  A
+Submission Server typically also acts as a Sending Server for the
+Messages it accepts.
+
+## Message Flow {#message-flow}
+
+{{fig-flow}} shows the path of a Message from a Client to a
+recipient.
+
+~~~ aasvg
++--------+  submission   +------------+   transfer   +-----------+
+| Client | ------------> | Submission | -----------> | Receiving |
+|  (MUA) |    (HMTP)     |   Server   |    (HMTP)    |  Server   |
++--------+               +------------+              +-----------+
+                               |                           |
+                               | fallback                  v
+                               | (SMTP)              +-----------+
+                               v                     | Recipient |
+                         +------------+              |  Mailbox  |
+                         |   SMTP     |              +-----------+
+                         |  Server    |
+                         +------------+
+~~~
+{: #fig-flow title="Message Flow"}
+
+1. The Client constructs a Message and an Envelope and submits them
+   to its Submission Server.
+
+2. The Submission Server authenticates the Client and verifies that
+   the Client is authorized to use the Envelope Sender and the
+   originator addresses of the Message.
+
+3. For each recipient domain, the Sending Server performs discovery
+   ({{discovery}}).  If the domain publishes an HMTP Endpoint, the
+   Sending Server transfers the Message to it using HMTP.  Otherwise,
+   the Sending Server delivers the Message using SMTP as described in
+   {{smtp-fallback}}.
+
+4. The Receiving Server verifies the signature of the request,
+   applies its local policy, and accepts or rejects the Message for
+   each Envelope Recipient.
+
+5. If the Message contains Content References, the Receiving Server
+   retrieves the referenced content and verifies its hash.
+
+6. The Receiving Server delivers the Message to the recipient
+   mailbox or relays it further.
+
+## Coexistence with SMTP {#coexistence}
+
+HMTP does not change the use of MX records {{RFC5321}} or the
+operation of existing SMTP servers.  A domain can publish an HMTP
+Endpoint in addition to its MX records, and a server can support both
+protocols at the same time.  Because the Message is carried
+unmodified, a Message can travel over a path that combines HMTP and
+SMTP hops without conversion.
 
 # Discovery {#discovery}
 
@@ -297,7 +364,7 @@ In examples, long lines are wrapped as described in {{RFC8792}}.
 ## Capabilities Document
 
 
-# Data Model
+# Data Model {#data-model}
 
 
 ## Envelope
@@ -324,7 +391,7 @@ In examples, long lines are wrapped as described in {{RFC8792}}.
 ## Retries and Idempotency
 
 
-# Message Submission
+# Message Submission {#submission}
 
 
 ## Client Authentication
@@ -333,7 +400,7 @@ In examples, long lines are wrapped as described in {{RFC8792}}.
 ## Authorization of Sender Addresses
 
 
-# Authentication and Signing
+# Authentication and Signing {#signing}
 
 
 ## Signature Construction
@@ -357,7 +424,7 @@ In examples, long lines are wrapped as described in {{RFC8792}}.
 ## Delivery Status Notifications
 
 
-# SMTP Fallback and Interoperability
+# SMTP Fallback and Interoperability {#smtp-fallback}
 
 
 ## When to Fall Back
