@@ -217,22 +217,88 @@ The following are outside the scope of this document:
 # Architecture
 
 
+## Roles
+
+
+## Message Flow
+
+
 # Discovery
+
+
+## DNS Record
+
+
+## Capabilities Document
 
 
 # Data Model
 
 
+## Envelope
+
+
+## Content Object
+
+
+## Attachments
+
+
+## Capabilities
+
+
 # Message Transfer
 
 
-# Delivery Status and Errors
+## Request
+
+
+## Response
+
+
+## Retries and Idempotency
+
+
+# Message Submission
+
+
+## Client Authentication
+
+
+## Authorization of Sender Addresses
 
 
 # Authentication and Signing
 
 
+## Signature Construction
+
+
+## Verification Procedure
+
+
+## Third-Party Senders
+
+
+# Delivery Status and Errors
+
+
+## Problem Details
+
+
+## Mapping to SMTP Status Codes
+
+
+## Delivery Status Notifications
+
+
 # SMTP Fallback and Interoperability
+
+
+## When to Fall Back
+
+
+## SMTP to HMTP Gateways
 
 
 # Deployment and Transition Considerations
@@ -243,17 +309,19 @@ The following are outside the scope of this document:
 
 # Security Considerations
 
-TODO Security
+
+# Privacy Considerations
 
 
 # IANA Considerations
 
-This document has no IANA actions.
-
 
 --- back
 
+# Examples
+
 # Acknowledgments
+
 {:numbered="false"}
 
 TODO acknowledge.
