@@ -40,6 +40,7 @@ normative:
   RFC6749:
   RFC7617:
   RFC6750:
+  RFC5598:
 
 informative:
   RFC3207:
@@ -55,6 +56,8 @@ informative:
   RFC9051:
   RFC9580:
   RFC8552:
+  RFC8792:
+  RFC5598:
 
 
 --- abstract
@@ -213,6 +216,68 @@ The following are outside the scope of this document:
 
 {::boilerplate bcp14-tagged}
 
+This document uses the terminology of the Internet Mail Architecture
+{{RFC5598}}.  The terms "JSON object", "member", and "array" are used
+as defined in {{RFC8259}}.  The terms "Content-Digest", "signature",
+"signer", and "verifier" are used as defined in {{RFC9421}} and
+{{RFC9530}}.
+
+The following terms are defined for use in this document:
+
+Message:
+: An Internet message in the format defined by {{RFC5322}},
+  including any MIME {{RFC2045}} structure.  HMTP transfers the
+  Message without modification.
+
+Envelope:
+: The JSON object that accompanies a Message in an HMTP request and
+  carries the information needed for delivery, such as the envelope
+  sender and the envelope recipients.  The Envelope is distinct from
+  the header fields of the Message.
+
+Envelope Sender:
+: The address to which delivery status notifications are sent,
+  carried in the Envelope.  It corresponds to the SMTP "MAIL FROM"
+  address {{RFC5321}}.
+
+Envelope Recipient:
+: An address to which the Message is to be delivered, carried in the
+  Envelope.  It corresponds to an SMTP "RCPT TO" address {{RFC5321}}.
+
+Sending Domain:
+: The domain on whose behalf an HMTP request is signed.
+
+Client:
+: A Mail User Agent (MUA) that submits Messages to a Submission
+  Server using HMTP.
+
+Submission Server:
+: A server that accepts Messages from authenticated Clients and
+  relays them toward their recipients.  It corresponds to the Message
+  Submission Agent (MSA) role described in {{RFC5598}}.
+
+Sending Server:
+: A server that transfers a Message to a Receiving Server using
+  HMTP.  It corresponds to the Message Transfer Agent (MTA) role
+  described in {{RFC5598}}.
+
+Receiving Server:
+: A server that accepts Messages from Sending Servers for the domains
+  it serves and delivers them to recipients or relays them further.
+
+HMTP Endpoint:
+: The HTTPS URI at which a server accepts HMTP requests, as
+  identified through discovery (see {{discovery}}).
+
+Content Reference:
+: A description of content, such as a Message or an attachment, that
+  is not carried in the request itself but is retrieved from a URI,
+  together with its size and cryptographic hash.
+
+A single server MAY act in more than one of these roles.
+
+In examples, long lines are wrapped as described in {{RFC8792}}.
+
 
 # Architecture
 
@@ -223,7 +288,7 @@ The following are outside the scope of this document:
 ## Message Flow
 
 
-# Discovery
+# Discovery {#discovery}
 
 
 ## DNS Record
