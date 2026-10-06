@@ -1657,12 +1657,12 @@ and has the following content:
 - The "from" clause contains, for a transfer request, the Sending
   Domain, followed by the IP address of the sender of the request in
   the "TCP-info" part, for example
-  "from example.com (hmtp-out.example.com [192.0.2.25])".  For a
+  `from example.com (hmtp-out.example.com [192.0.2.25])`.  For a
   submission request, it contains the IP address of the Client as an
   address literal, followed by the same address literal in the
-  "TCP-info" part, for example "from [198.51.100.7] ([198.51.100.7])".
+  "TCP-info" part, for example `from [198.51.100.7] ([198.51.100.7])`.
   For privacy reasons, a Submission Server MAY use the address literal
-  "[127.0.0.1]" in both places instead of the IP address of the
+  `[127.0.0.1]` in both places instead of the IP address of the
   Client.
 
 - The "by" clause contains the host name of the server.
@@ -1952,7 +1952,7 @@ The Sending Server creates a signature as specified in
   - "created" is the time at which the signature was created.
   - "expires" MUST NOT be more than 300 seconds after "created".
   - "keyid" is the DNS name of the key record, in the form
-    "<selector>._domainkey.<domain>", where the domain is in A-label
+    `<selector>._domainkey.<domain>`, where the domain is in A-label
     form, without a trailing dot.  The domain in this name is the
     Sending Domain.
   - "alg" is the signature algorithm that corresponds to the key type
@@ -2023,7 +2023,7 @@ rejected with the "signature-invalid" problem type.
    and that "expires" is not more than 300 seconds after "created".
 
 4. It verifies that "keyid" has the form
-   "<selector>._domainkey.<domain>", where the selector has the syntax
+   `<selector>._domainkey.<domain>`, where the selector has the syntax
    defined in {{RFC6376}}.  Because a selector cannot contain the label
    "_domainkey", the Sending Domain is the part of the name that
    follows the first "_domainkey" label.
@@ -2139,7 +2139,7 @@ Result Object ({{transfer-response}}); in that case, the "status"
 member MAY be omitted and is ignored if present.
 
 Problem types defined for HMTP have URIs of the form
-"urn:ietf:params:hmtp:error:<name>" and are registered as described
+`urn:ietf:params:hmtp:error:<name>` and are registered as described
 in {{iana-problem-types}}.  Servers MAY use other problem type URIs
 as permitted by {{RFC9457}}.
 
@@ -2903,7 +2903,7 @@ Because the identity of the sender is established by the signature,
 rate limits and blocking can be applied per Sending Domain rather
 than per IP address.
 
-## Client Authentication
+## Client Authentication {#security-client-authentication}
 
 Credentials used with the "basic" scheme are passwords and are subject
 to guessing and phishing.  Servers SHOULD support bearer tokens,
@@ -3031,7 +3031,7 @@ Specification:
 Repository:
 : The "HTTP Mail Transfer Protocol (HMTP)" registry group defined in
   this document.  URNs of the form
-  "urn:ietf:params:hmtp:error:<name>" identify problem types
+  `urn:ietf:params:hmtp:error:<name>` identify problem types
   registered in the "HMTP Problem Types" registry.
 
 Index value:
@@ -3102,7 +3102,7 @@ The initial contents are:
 The registry records the following fields for each problem type:
 
 - Name: the name of the problem type, used in the URN
-  "urn:ietf:params:hmtp:error:<name>".
+  `urn:ietf:params:hmtp:error:<name>`.
 - Scope: "Request", "Recipient", or "Both".
 - HTTP Status: the HTTP status code used for request-level failures.
 - Enhanced Status: the enhanced status code or codes.
@@ -3121,7 +3121,7 @@ This appendix contains complete examples of HMTP exchanges.  As noted
 in {{conventions}}, base64 data, digests, and signature
 values are abbreviated or illustrative.
 
-## Discovery
+## Discovery {#example-discovery}
 
 A Sending Server that has a Message for "bob@example.net" queries DNS
 and retrieves the Capabilities Document of the target host:
@@ -3217,7 +3217,7 @@ Content-Type: application/json
 }
 ~~~
 
-## Submission
+## Submission {#example-submission}
 
 A Client submits a Message with Basic authentication.  The Submission
 Server accepts responsibility for both recipients and reports the
