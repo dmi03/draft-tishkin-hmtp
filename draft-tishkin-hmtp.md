@@ -67,14 +67,17 @@ normative:
   RFC9728:
 
 informative:
+  RFC2034:
   RFC2046:
   RFC3207:
+  RFC4865:
   RFC4954:
   RFC7208:
   RFC7489:
+  RFC6522:
+  RFC6797:
   RFC7505:
   RFC7672:
-  RFC6797:
   RFC8098:
   RFC8301:
   RFC8461:
@@ -542,36 +545,21 @@ versions:
   A Version Object contains the following member:
 
   endpoints:
-  : REQUIRED.  A JSON object that maps each interaction supported in
-    this version to the URI of its endpoint.  This document defines
+  : REQUIRED.  A JSON object whose member names identify the
+    interactions supported in this version and whose values are
+    Endpoint Objects ({{endpoint-objects}}).  This document defines
     the following members:
 
-    - "transfer": the endpoint for transfer ({{transfer}});
-    - "submission": the endpoint for submission ({{submission}});
-    - "identities": the endpoint that lists the addresses a Client
-      is authorized to use ({{identities}}).
+    - "transfer": the Transfer Endpoint Object, which describes the
+      endpoint for transfer ({{transfer}});
+    - "submission": the Submission Endpoint Object, which describes
+      the endpoint for submission ({{submission}}) and the related
+      identities endpoint ({{identities}}).
 
-    At least one of "transfer" and "submission" MUST be present.  The
-    "identities" member MUST NOT be present unless "submission" is
-    present.  URIs MUST use the "https" scheme and MAY be relative,
-    in which case they are resolved against the URI of the
-    Capabilities Document {{RFC3986}}.  Additional endpoints MAY be
-    defined by capabilities ({{capabilities}}) and are registered as
-    described in {{iana-endpoints}}.
-
-authentication:
-: REQUIRED if any Version Object contains a "submission" endpoint.
-  An array of strings listing the authentication schemes accepted for
-  submission, as described in {{client-authentication}}.
-
-oauthResourceMetadata:
-: OPTIONAL.  The URI of the OAuth 2.0 Protected Resource Metadata
-  {{RFC9728}} of the server.  The URI MUST use the "https" scheme and
-  MAY be relative, in which case it is resolved against the URI of
-  the Capabilities Document.  If this member is absent, Clients
-  locate the metadata as specified in {{RFC9728}}.  The resource
-  identifier of a Submission Server is the origin of its submission
-  endpoint.
+    At least one of "transfer" and "submission" MUST be present.
+    Additional endpoints MAY be defined by capabilities
+    ({{capabilities}}) and are registered as described in
+    {{iana-endpoints}}.
 
 limits:
 : OPTIONAL.  A JSON object describing limits of the server.  All
@@ -603,11 +591,55 @@ policy:
 capabilities:
 : OPTIONAL.  A JSON object whose member names identify supported
   extensions and whose values contain parameters of each extension.
-  Extensions are specified as described in {{capabilities}} and
-  registered as described in {{iana}}.
+  Extensions are specified as described in {{capabilities}}.  Their
+  names are either registered with IANA or URIs that serve only as
+  unique names ({{capability-names}}).
 
 Recipients of the Capabilities Document MUST ignore members they do
 not understand.
+
+### Endpoint Objects {#endpoint-objects}
+
+An Endpoint Object is a JSON object that describes one endpoint and
+the parameters that apply to it.  Every Endpoint Object contains the
+following member:
+
+uri:
+: REQUIRED.  The URI of the endpoint.  The URI MUST use the "https"
+  scheme and MAY be relative, in which case it is resolved against
+  the URI of the Capabilities Document {{RFC3986}}.
+
+The specification of an endpoint, or a capability ({{capabilities}}),
+can define further members of an Endpoint Object.  Because recipients
+ignore members they do not understand, new parameters can be added to
+an endpoint without changing the structure of the Capabilities
+Document.
+
+The Transfer Endpoint Object has no members other than "uri" in this
+document.  Transfer requests are authenticated by signatures
+({{signing}}), so no authentication parameters apply to it.
+
+The Submission Endpoint Object contains the following members in
+addition to "uri":
+
+identities:
+: OPTIONAL.  The URI of the identities endpoint ({{identities}}),
+  subject to the same rules as "uri".  The identities endpoint accepts
+  the same authentication as the submission endpoint.
+
+authentication:
+: REQUIRED.  A non-empty array of strings listing the authentication
+  schemes accepted by the submission endpoint and the identities
+  endpoint, as described in {{client-authentication}}.
+
+oauthResourceMetadata:
+: OPTIONAL.  The URI of the OAuth 2.0 Protected Resource Metadata
+  {{RFC9728}} of the Submission Server, subject to the same rules as
+  "uri".  If this member is absent, Clients locate the metadata as
+  specified in {{RFC9728}}.  The resource identifier of a Submission
+  Server is the origin of its submission endpoint.
+
+### Retrieval and Caching
 
 Servers SHOULD include caching information in the response, and
 recipients MAY cache the document as specified in {{RFC9111}}.
@@ -626,6 +658,8 @@ follows:
   host and continues with the next ServiceMode record, if any.  If no
   usable host remains, the domain is treated as not supporting HMTP.
 
+### Example {#capabilities-document-example}
+
 The following example shows the DNS record and the Capabilities
 Document of a domain whose mail is handled by a provider:
 
@@ -643,14 +677,19 @@ Cache-Control: max-age=86400
   "versions": {
     "1": {
       "endpoints": {
-        "transfer": "/hmtp/v1/transfer",
-        "submission": "/hmtp/v1/submission",
-        "identities": "/hmtp/v1/identities"
+        "transfer": {
+          "uri": "/hmtp/v1/transfer"
+        },
+        "submission": {
+          "uri": "/hmtp/v1/submission",
+          "identities": "/hmtp/v1/identities",
+          "authentication": ["basic", "bearer"],
+          "oauthResourceMetadata":
+            "/.well-known/oauth-protected-resource"
+        }
       }
     }
   },
-  "authentication": ["basic", "bearer"],
-  "oauthResourceMetadata": "/.well-known/oauth-protected-resource",
   "limits": {
     "maxMessageSize": 107374182400,
     "maxRequestSize": 52428800,
@@ -705,13 +744,29 @@ id:
   base64url alphabet ({{Section 5 of RFC4648}}): "A" to "Z", "a" to
   "z", "0" to "9", "-", and "_".  Its length MUST NOT exceed the
   "maxIdLength" limit of the recipient of the request (see
-  {{capabilities-document}}).  The sender MUST generate a Transfer
-  Identifier that is unique within the scope described in
-  {{idempotency}}, and it SHOULD contain at least 128 bits of
-  randomness, for example 16 random octets encoded in base64url
-  without padding, which yields 22 characters.  A request whose
-  Transfer Identifier does not meet these requirements is rejected
-  with the "invalid-request" problem type.
+  {{capabilities-document}}).  The sender SHOULD include at least 128
+  bits of randomness, for example 16 random octets encoded in
+  base64url without padding, which yields 22 characters.  A request
+  whose Transfer Identifier does not meet these requirements is
+  rejected with the "invalid-request" problem type.
+
+  A Transfer Identifier is not globally unique and is never
+  interpreted on its own.  The recipient of a request stores and
+  compares it only together with its scope ({{idempotency}}):
+
+  - for a transfer request, the Sending Domain, that is, the domain
+    of the key that signed the request as established by the
+    verification procedure ({{verification}}).  The host name and IP
+    address of the Sending Server are not part of the scope, so that
+    a retry is recognized even if it is sent from another host of the
+    same Sending Domain;
+  - for a submission request, the account of the authenticated
+    Client.
+
+  The sender MUST generate Transfer Identifiers that are unique
+  within their scope.  Identical Transfer Identifiers in different
+  scopes, for example from two different Sending Domains, identify
+  unrelated requests.
 
 from:
 : REQUIRED.  The Envelope Sender.  The value is either a "Mailbox" as
@@ -949,15 +1004,17 @@ retrieves referenced content:
 
 Before responding:
 : The recipient retrieves and verifies all Content References before
-  it sends the response.  If retrieval fails temporarily, it responds
+  it sends the response, which then has the status code 200 (OK).  If
+  retrieval fails temporarily, it responds
   with the "content-unavailable" problem type and a temporary
   enhanced status code.  If retrieval fails permanently, it rejects
   the request with the corresponding problem type.
 
 After responding:
 : The recipient accepts the Message for some or all Envelope
-  Recipients and indicates in the response that retrieval is still
-  pending (see {{transfer-response}}).  By doing so, it accepts
+  Recipients and responds with the status code 202 (Accepted), which
+  indicates that retrieval is still pending (see
+  {{transfer-response}}).  By doing so, it accepts
   responsibility for retrieving the content and MUST complete the
   retrieval before the earliest "expires" timestamp of the Content
   References.  If the retrieval fails permanently, or cannot be
@@ -978,8 +1035,11 @@ recipient of the Message, such as opening the Message (see
 
 The sender of a request MUST keep the content of every Content
 Reference available at its URI until its "expires" timestamp, unless
-every recipient of a request containing the Content Reference has
-indicated that retrieval is complete.
+every request containing the Content Reference has received a
+response with the status code 200 (OK), which indicates that the
+retrieval is complete or was not needed.  After a response with the
+status code 202 (Accepted), the sender keeps the content available
+until its "expires" timestamp.
 
 A server that relays a Message MAY pass Content References on to the
 next hop unchanged, without retrieving them, if at least 24 hours
@@ -1086,12 +1146,42 @@ defined as capabilities include the transfer of several Messages in
 one request, a status endpoint for submitted Messages, and the recall
 of Messages that have not yet been delivered.
 
-A capability is identified by its name.  A name is either a name
-registered in the "HMTP Capabilities" registry ({{iana-capabilities}}),
-which consists of 1 to 64 lowercase ASCII letters, digits, and
-hyphens, starts with a letter, and does not end with a hyphen; or an
-absolute URI {{RFC3986}} under the control of the party that defines
-the capability, for private or experimental use.
+### Capability Names {#capability-names}
+
+A capability is identified by its name.  A name takes one of two
+forms:
+
+Registered name:
+: A string of 1 to 64 characters that consists of lowercase ASCII
+  letters, digits, and hyphens, starts with a letter, and does not
+  end with a hyphen, for example "future-release".  A registered name
+  MUST be registered in the "HMTP Capabilities" registry
+  ({{iana-capabilities}}) before it is used, which requires a
+  publicly available specification (see {{iana}}).  Implementations
+  MUST NOT use a name of this form that is not registered.
+  Registered names are intended for capabilities that are meant to
+  be implemented interoperably by independent parties.
+
+URI:
+: An absolute URI {{RFC3986}}, for example
+  "https://vendor.example.com/hmtp/future-release".  Such a URI is only a
+  unique name for the capability.  It is compared with other names
+  character by character, with case sensitivity, and is never
+  dereferenced: implementations MUST NOT retrieve it as part of
+  protocol processing, and it does not need to resolve to anything.
+  Uniqueness follows from the control of the party that defines the
+  capability over the authority component of the URI, typically a
+  domain name it owns.  URIs require no registration with IANA and
+  are intended for private, vendor-specific, and experimental
+  capabilities.  The URI MAY point to human-readable documentation,
+  but this has no significance for the protocol.
+
+A capability that starts as a URI and is later standardized receives
+a registered name.  The two names identify distinct capabilities; a
+server MAY advertise both during a transition period, and a request
+lists the one whose definition it follows.
+
+### Advertisement and Use {#capability-use}
 
 A server advertises the capabilities it supports in the "capabilities"
 member of its Capabilities Document.  The value of each member is a
@@ -1120,26 +1210,144 @@ cannot safely ignore.  The following rules apply:
   must-understand.  Recipients of responses MUST ignore members they
   do not understand.
 
-The following example shows a hypothetical capability that is
-advertised by a server and used in a request:
+To prevent collisions between members defined by independent parties,
+the following rules apply to the members that a capability adds to
+JSON objects defined by this document:
+
+- A capability with a registered name defines member names directly.
+  The designated experts ensure that these names do not collide with
+  names defined by this document or by other registered capabilities.
+
+- A capability identified by a URI adds exactly one member to each
+  object it extends.  The name of this member is the URI of the
+  capability, and its value is a JSON object that contains all
+  members defined by the capability for that object.
+
+- A capability with a registered name that defines a new endpoint
+  registers the endpoint name ({{iana-endpoints}}) and is advertised
+  with an Endpoint Object in the "endpoints" member of a Version
+  Object.  A capability identified by a URI advertises the URIs of
+  its endpoints in its own parameters instead.
+
+### Specifying a Capability {#capability-spec}
+
+The specification of a capability defines at least the following:
+
+- its name and whether it is must-understand;
+- its parameters in the Capabilities Document, including their types
+  and default values;
+- the members it adds to the Request Object, the Envelope, the
+  Recipient Object, Content Objects, the Response Object, and
+  Endpoint Objects, and their meaning;
+- any new endpoints, encodings, and problem types;
+- the behavior of senders and recipients, including the behavior of
+  a server that relays a Message that uses the capability to a next
+  hop that does not support it, either over HMTP or over SMTP; and
+- its security and privacy considerations.
+
+### Example {#capability-example}
+
+This section shows a complete example of a hypothetical
+must-understand capability that allows the sender to request that a
+Message be held by the Receiving Server and released for delivery no
+earlier than a given time, similar to the SMTP FUTURERELEASE extension
+{{RFC4865}}.  The capability is defined by a vendor and is therefore
+identified by a URI.  Its specification could read as follows:
+
+Name:
+: "https://vendor.example/hmtp/future-release".
+
+Must-understand:
+: Yes.  A recipient that ignored the capability would deliver the
+  Message immediately.
+
+Parameters:
+: "maxInterval": REQUIRED.  The maximum number of seconds between the
+  receipt of a request and the release time that the server accepts.
+
+Envelope members:
+: "releaseAt": REQUIRED.  A timestamp before which the recipient MUST
+  NOT deliver the Message to a recipient mailbox.  If it is more than
+  "maxInterval" seconds after the time of receipt, the recipient
+  rejects the request with the "invalid-request" problem type.
+
+Response members:
+: None.
+
+Relaying:
+: A server that relays the Message before the release time MUST NOT
+  pass it to a next hop that does not advertise the capability; it
+  holds the Message itself until the release time instead.
+
+A server that supports the capability advertises it in its
+Capabilities Document:
 
 ~~~ json
 {
+  "versions": {
+    "1": {
+      "endpoints": {
+        "transfer": {
+          "uri": "/hmtp/v1/transfer"
+        }
+      }
+    }
+  },
   "capabilities": {
-    "https://capabilities.example.org/priority": {
-      "levels": ["low", "normal", "high"]
+    "https://vendor.example/hmtp/future-release": {
+      "maxInterval": 604800
     }
   }
 }
 ~~~
 
+A sender that uses the capability lists it in the request and adds
+the member defined by the capability to the Envelope, under the name
+of the capability:
+
 ~~~ json
 {
-  "capabilities": ["https://capabilities.example.org/priority"],
-  "envelope": { "...": "..." },
-  "message": { "...": "..." }
+  "capabilities": [
+    "https://vendor.example/hmtp/future-release"
+  ],
+  "envelope": {
+    "id": "Rt5yU8iO1pA4sD7fG0hJ2k",
+    "from": "alice@example.com",
+    "to": [{"address": "bob@example.net"}],
+    "https://vendor.example/hmtp/future-release": {
+      "releaseAt": "2026-01-02T09:00:00Z"
+    }
+  },
+  "message": {
+    "data": "RnJvbTogQWxpY2UgPGFsaWNlQGV4YW1wbGUuY29tPg0K..."
+  }
 }
 ~~~
+
+The URI "https://vendor.example/hmtp/future-release" in this example
+is never retrieved; it only names the capability.
+
+A server that does not support the capability rejects the request:
+
+~~~ http-message
+HTTP/1.1 400 Bad Request
+Content-Type: application/problem+json
+
+{
+  "type": "urn:ietf:params:hmtp:error:unsupported-capability",
+  "title": "Unsupported capability",
+  "status": 400,
+  "detail": "https://vendor.example/hmtp/future-release",
+  "smtpStatus": "5.5.4",
+  "smtpReply": 555
+}
+~~~
+
+If the same capability were standardized and registered under the
+name "future-release", the server would advertise
+`"future-release": {"maxInterval": 604800}`, the request would list
+"future-release" in its "capabilities" member, and the Envelope would
+contain the member `"releaseAt": "2026-01-02T09:00:00Z"` directly.
 
 # Message Transfer {#transfer}
 
@@ -1267,11 +1475,33 @@ received completely.
 
 ## Response {#transfer-response}
 
-If the Receiving Server has processed the request, it responds with
-the status code 200 (OK) and a Response Object, even if it has
-rejected the Message for some or all Envelope Recipients.  If the
-request as a whole fails, the Receiving Server responds with a 4xx
-or 5xx status code and a problem details object as described in
+If the Receiving Server has processed the request, it responds with a
+Response Object and one of the following status codes, even if it has
+rejected the Message for some or all Envelope Recipients:
+
+200 (OK):
+: The request has been processed completely.  Either the request
+  contains no Content References, or all referenced content has been
+  retrieved and verified, or the Message has not been accepted for any
+  Envelope Recipient.
+
+202 (Accepted):
+: The Message has been accepted for at least one Envelope Recipient,
+  but the retrieval of referenced content is still pending.  The
+  Receiving Server has accepted responsibility for completing the
+  retrieval later, as described in {{reference-retrieval}}.  A
+  Receiving Server MUST NOT use this status code for a request that
+  contains no Content References.
+
+In both cases, the results for the individual Envelope Recipients are
+final: a recipient with the result "accepted" remains accepted, and
+any later failure, including a failure of the pending retrieval, is
+reported through a delivery status notification ({{dsn}}).  The status
+code only tells the sender whether it still has to keep the
+referenced content available.
+
+If the request as a whole fails, the Receiving Server responds with a
+4xx or 5xx status code and a problem details object as described in
 {{problem-details}}; in that case, the Message has not been accepted
 for any Envelope Recipient.
 
@@ -1282,15 +1512,6 @@ queueId:
 : OPTIONAL.  A string assigned by the Receiving Server that
   identifies the Message in its systems, such as a queue identifier.
   It is intended for logging and diagnostics.
-
-content:
-: REQUIRED if the request contains at least one Content Reference and
-  the Message has been accepted for at least one Envelope Recipient;
-  otherwise absent.  The string "retrieved" indicates that all
-  referenced content has been retrieved and verified.  The string
-  "pending" indicates that the Receiving Server has accepted
-  responsibility for retrieving the content later, as described in
-  {{reference-retrieval}}.
 
 recipients:
 : REQUIRED.  An array of Recipient Result Objects, exactly one for
@@ -1363,18 +1584,27 @@ Receiving Server had accepted the Message.
 
 The scope of a Transfer Identifier is the Sending Domain for transfer
 requests, and the authenticated account of the Client for submission
-requests.  A sender MUST NOT use the same Transfer Identifier within
-one scope for requests with different content.
+requests (see {{envelope}}).  The key under which a Receiving Server
+stores and looks up a Transfer Identifier is therefore the pair
+(Sending Domain, Transfer Identifier) for transfer requests and the
+pair (account, Transfer Identifier) for submission requests.  The
+Sending Domain is the one established by verifying the signature of
+the request ({{verification}}), never a value taken from the content
+of the request.  A sender MUST NOT use the same Transfer Identifier
+within one scope for requests with different content.
 
-When a Receiving Server sends a 200 (OK) response, it MUST store the
-scope, the Transfer Identifier, a hash of the content of the request,
-and the response, and MUST retain them for at least 24 hours.  When
-it receives a request whose scope and Transfer Identifier match a
-stored entry:
+When a Receiving Server sends a 200 (OK) or 202 (Accepted) response,
+it MUST store the key, a hash of the content of the request, and the
+response, and MUST retain them for at least 24 hours.  When it
+receives a request whose key matches a stored entry:
 
 - If the hash of the content of the request matches, the Receiving
   Server MUST NOT process the request again and MUST return the stored
-  response.
+  response.  If the stored response has the status code 202
+  (Accepted) and the retrieval of referenced content has been
+  completed in the meantime, it MAY return the status code 200 (OK)
+  with the same Response Object instead.  Senders MUST NOT retry
+  requests solely to learn whether a retrieval has been completed.
 
 - Otherwise, it MUST reject the request with the "id-conflict"
   problem type.
@@ -1421,14 +1651,19 @@ have expired.
 
 A server that accepts responsibility for a Message, whether through
 transfer or submission, MUST prepend a Received header field to the
-Message, as specified in {{Section 4.4 of RFC5321}}, with the
-following content:
+Message.  The field follows the syntax of {{Section 4.4 of RFC5321}}
+and has the following content:
 
 - The "from" clause contains, for a transfer request, the Sending
   Domain, followed by the IP address of the sender of the request in
-  the "TCP-info" part.  For a submission request, it contains the IP
-  address of the Client as an address literal; a Submission Server
-  MAY omit it for privacy reasons.
+  the "TCP-info" part, for example
+  "from example.com (hmtp-out.example.com [192.0.2.25])".  For a
+  submission request, it contains the IP address of the Client as an
+  address literal, followed by the same address literal in the
+  "TCP-info" part, for example "from [198.51.100.7] ([198.51.100.7])".
+  For privacy reasons, a Submission Server MAY use the address literal
+  "[127.0.0.1]" in both places instead of the IP address of the
+  Client.
 
 - The "by" clause contains the host name of the server.
 
@@ -1481,9 +1716,9 @@ is an HTTP POST request with the same content as a transfer request
 The Submission Server processes the request as described in
 {{transfer-processing}}, except that it authenticates the Client
 instead of verifying a signature, accepts Envelope Recipients in any
-domain, verifies the sender addresses as
-described in {{sender-authorization}}, and validates the Message as
-described in {{message-validation}}.  It responds with a Response
+domain, verifies the sender addresses as described in
+{{sender-authorization}}, and validates the Message as described in
+{{message-validation}}.  It responds with a Response
 Object as described in {{transfer-response}}.  The result "accepted"
 indicates that the Submission Server has accepted responsibility for
 delivering the Message to the recipient; the outcome of the final
@@ -1496,9 +1731,10 @@ Client can safely retry a submission after a lost response.
 
 ## Client Authentication {#client-authentication}
 
-The "authentication" member of the Capabilities Document lists the
-HTTP authentication schemes {{RFC9110}} accepted by the Submission
-Server, using the scheme names from the "HTTP Authentication Scheme
+The "authentication" member of the Submission Endpoint Object
+({{endpoint-objects}}) lists the HTTP authentication schemes
+{{RFC9110}} accepted by the Submission Server for the submission and
+identities endpoints, using the scheme names from the "HTTP Authentication Scheme
 Registry".  Scheme names are compared without regard to case.  This
 document uses the following schemes:
 
@@ -1595,8 +1831,10 @@ removal of Bcc header fields ({{Section 3.6.3 of RFC5322}}).
 ## Identities {#identities}
 
 The identities endpoint returns the identities that the authenticated
-Client is authorized to use as originator addresses.  A Client sends
-an HTTP GET request to the endpoint, authenticated as described in
+Client is authorized to use as originator addresses.  Its URI is given
+by the "identities" member of the Submission Endpoint Object
+({{endpoint-objects}}).  A Client sends an HTTP GET request to the
+endpoint, authenticated as described in
 {{client-authentication}}.  The server responds with the status code
 200 (OK) and a JSON object with the media type "application/json" and
 the following member:
@@ -2131,7 +2369,8 @@ The fields of the DSN are filled in as follows:
   server with the type "dns".
 
 - The "Remote-MTA" field, if present, contains the TargetName of the
-  HMTP Endpoint with the type "dns".
+  HMTP Endpoint or, after a fallback to SMTP ({{smtp-fallback}}), the
+  host name of the SMTP server, with the type "dns".
 
 - The "Status" field contains the enhanced status code from the
   "smtpStatus" member of the problem details object.  A Sending
@@ -2151,6 +2390,92 @@ header section of the Message.
 
 DSNs are ordinary Messages and are transferred using HMTP or SMTP like
 any other Message.
+
+### Example {#dsn-example}
+
+The following DSN is generated by the Sending Server in the example of
+{{fallback-example}} for the rejected Envelope Recipient
+"dave@example.org".  It uses the "multipart/report" media type
+{{RFC6522}} with a "message/delivery-status" part {{RFC3464}}.
+Because the "ret" member of the Envelope is "hdrs", the DSN contains
+only the header section of the original Message:
+
+~~~
+Date: Thu, 01 Jan 2026 12:00:03 +0000
+From: Mail Delivery System <mailer-daemon@hmtp.provider.example>
+To: alice@example.com
+Subject: Delivery Status Notification (Failure)
+Message-ID: <dsn.Xk4mP9qR2sT7@hmtp.provider.example>
+MIME-Version: 1.0
+Content-Type: multipart/report; report-type=delivery-status;
+        boundary="dsn-b1"
+
+--dsn-b1
+Content-Type: text/plain; charset=us-ascii
+
+Your message could not be delivered to the following recipient:
+
+  dave@example.org
+  550 5.1.1 Recipient address rejected
+
+--dsn-b1
+Content-Type: message/delivery-status
+
+Reporting-MTA: dns; hmtp.provider.example
+Original-Envelope-Id: QQ314159
+Arrival-Date: Thu, 01 Jan 2026 11:59:58 +0000
+
+Original-Recipient: rfc822;dave@example.org
+Final-Recipient: rfc822;dave@example.org
+Action: failed
+Status: 5.1.1
+Remote-MTA: dns; mx.example.org
+Diagnostic-Code: smtp; 550 5.1.1 <dave@example.org>: Recipient
+ address rejected
+
+--dsn-b1
+Content-Type: text/rfc822-headers
+
+Received: from [198.51.100.7] ([198.51.100.7])
+        by hmtp.provider.example with HMTPA id S-20260101-0043;
+        Thu, 01 Jan 2026 11:59:58 +0000
+Date: Thu, 01 Jan 2026 11:59:57 +0000
+From: Alice <alice@example.com>
+To: Dave <dave@example.org>, Erin <erin@example.org>
+Subject: Quarterly report
+Message-ID: <20260101115957.4f2a@example.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+--dsn-b1--
+~~~
+
+The fields of the "message/delivery-status" part are derived as
+described above: "Original-Envelope-Id" from the "envid" member,
+"Original-Recipient" from the "orcpt" member, "Status" and
+"Diagnostic-Code" from the SMTP reply, and "Remote-MTA" from the host
+name of the SMTP server.  If the failure had been reported by an HMTP
+Receiving Server, "Status" would have been taken from the "smtpStatus"
+member of the problem details object, "Diagnostic-Code" would have
+been composed from its "smtpReply", "smtpStatus", and "detail"
+members, and "Remote-MTA" would have contained the TargetName of the
+HMTP Endpoint.
+
+The DSN is delivered to the Envelope Sender of the original Message
+like any other Message, with an empty Envelope Sender, so that no DSN
+is generated if the DSN itself cannot be delivered.  When it is
+transferred using HMTP, the Request Object contains the following
+Envelope; because the Envelope Sender is empty, any Sending Domain is
+acceptable ({{alignment}}):
+
+~~~ json
+{
+  "id": "nH8sK2dL5fQ9wE3rT6yU1i",
+  "from": "",
+  "to": [{"address": "alice@example.com"}]
+}
+~~~
 
 # SMTP Fallback and Interoperability {#smtp-fallback}
 
@@ -2210,6 +2535,126 @@ specified in {{RFC5321}}, with the following requirements:
 
 - It SHOULD use STARTTLS {{RFC3207}} and SHOULD apply MTA-STS
   {{RFC8461}} or DANE {{RFC7672}} when the domain publishes them.
+
+### Example {#fallback-example}
+
+The Submission Server "hmtp.provider.example" of the domain
+"example.com", which also acts as its Sending Server, has accepted a
+Message from a Client with the following Envelope:
+
+~~~ json
+{
+  "id": "Xk4mP9qR2sT7vW1yZ3bC5d",
+  "from": "alice@example.com",
+  "to": [
+    {
+      "address": "dave@example.org",
+      "dsn": {
+        "notify": ["failure", "delay"],
+        "orcpt": "rfc822;dave@example.org"
+      }
+    },
+    {"address": "erin@example.org"}
+  ],
+  "dsn": {"ret": "hdrs", "envid": "QQ314159"},
+  "body": "8bitmime"
+}
+~~~
+
+Discovery for "example.org" shows that the domain does not support
+HMTP, because the name "_hmtp.example.org" does not exist.  The
+Sending Server has no recorded downgrade policy for "example.org", so
+it falls back to SMTP and looks up the MX records of the domain:
+
+~~~ dns
+; _hmtp.example.org. IN SVCB  ->  NXDOMAIN
+example.org.  3600 IN MX 10 mx.example.org.
+~~~
+
+The Sending Server then delivers the Message to "mx.example.org".  In
+the following transcript, "C:" denotes lines sent by the Sending
+Server and "S:" lines sent by the SMTP server:
+
+~~~
+NOTE: '\' line wrapping per RFC 8792
+
+S: 220 mx.example.org ESMTP
+C: EHLO hmtp.provider.example
+S: 250-mx.example.org
+S: 250-8BITMIME
+S: 250-DSN
+S: 250-ENHANCEDSTATUSCODES
+S: 250 STARTTLS
+C: STARTTLS
+S: 220 2.0.0 Ready to start TLS
+   (TLS handshake; the certificate of mx.example.org is validated)
+C: EHLO hmtp.provider.example
+S: 250-mx.example.org
+S: 250-8BITMIME
+S: 250-DSN
+S: 250 ENHANCEDSTATUSCODES
+C: MAIL FROM:<alice@example.com> BODY=8BITMIME RET=HDRS \
+   ENVID=QQ314159
+S: 250 2.1.0 Sender OK
+C: RCPT TO:<dave@example.org> NOTIFY=FAILURE,DELAY \
+   ORCPT=rfc822;dave@example.org
+S: 550 5.1.1 <dave@example.org>: Recipient address rejected
+C: RCPT TO:<erin@example.org>
+S: 250 2.1.5 Recipient OK
+C: DATA
+S: 354 End data with <CR><LF>.<CR><LF>
+C: Received: from [198.51.100.7] ([198.51.100.7])
+C:         by hmtp.provider.example with HMTPA id S-20260101-0043;
+C:         Thu, 01 Jan 2026 11:59:58 +0000
+C: Date: Thu, 01 Jan 2026 11:59:57 +0000
+C: From: Alice <alice@example.com>
+C: To: Dave <dave@example.org>, Erin <erin@example.org>
+C: Subject: Quarterly report
+C: Message-ID: <20260101115957.4f2a@example.com>
+C: MIME-Version: 1.0
+C: Content-Type: text/plain; charset=utf-8
+C: Content-Transfer-Encoding: 8bit
+C:
+C: (body of the Message)
+C: .
+S: 250 2.0.0 Ok: queued as 7HG2Lk
+C: QUIT
+S: 221 2.0.0 Bye
+~~~
+
+The members of the Envelope are mapped to SMTP as follows:
+
+- "from" and the "address" members of the Recipient Objects become
+  the arguments of the MAIL FROM and RCPT TO commands.
+
+- "body" with the value "8bitmime" becomes the parameter
+  "BODY=8BITMIME".  The SMTP server advertises 8BITMIME, so the
+  Message can be transferred without conversion.  If it did not, the
+  Sending Server would fail the delivery to both recipients with the
+  "conversion-required" problem type instead of converting the
+  Message.
+
+- "ret" and "envid" become the parameters "RET=HDRS" and
+  "ENVID=QQ314159", and the "dsn" member of the first Recipient
+  Object becomes the parameters "NOTIFY=FAILURE,DELAY" and
+  "ORCPT=rfc822;dave@example.org".  The values contain no characters
+  that require "xtext" encoding.  The SMTP server advertises the DSN
+  extension {{RFC3461}}, so the parameters can be transmitted.
+
+- The Message is transmitted octet for octet as it was accepted from
+  the Client, including the Received header field that the Submission
+  Server prepended ({{trace}}).  The SMTP server advertises
+  ENHANCEDSTATUSCODES {{RFC2034}}, so its replies contain enhanced
+  status codes.
+
+The SMTP server accepts the Message for "erin@example.org".  It
+rejects "dave@example.org" with a permanent failure.  Because the
+Recipient Object of "dave@example.org" requests notification on
+failure, the Sending Server generates the DSN shown in
+{{dsn-example}}.  Had the SMTP server failed with a temporary error,
+the Sending Server would have retried later, repeating discovery
+before each retry, and would have used HMTP if "example.org" had
+started to publish an HMTP Endpoint in the meantime.
 
 ## Downgrade Policy {#policy}
 
@@ -2517,9 +2962,9 @@ the request content and the response.  This information SHOULD NOT be
 retained longer than needed for the purposes described in
 {{idempotency}}.
 
-Submission Servers MAY omit the IP address of the Client from the
-Received header field ({{trace}}) to protect the privacy of the
-user.
+Submission Servers MAY replace the IP address of the Client in the
+Received header field with a placeholder ({{trace}}) to protect the
+privacy of the user.
 
 # IANA Considerations {#iana}
 
@@ -2606,10 +3051,13 @@ specification is consistent with the extension rules of
 
 ### HMTP Capabilities {#iana-capabilities}
 
-The registry records the following fields for each capability:
+The registry contains capabilities with registered names.
+Capabilities identified by URIs are not registered (see
+{{capability-names}}).  The registry records the following fields for
+each capability:
 
-- Name: the name of the capability, with the syntax defined in
-  {{capabilities}}.
+- Name: the registered name of the capability, with the syntax
+  defined in {{capability-names}}.
 - Description: a brief description.
 - Must-Understand: "yes" or "no", as defined in {{capabilities}}.
 - Reference: the specification of the capability.
@@ -2624,15 +3072,15 @@ used in the "endpoints" member of a Version Object:
 
 - Name: the member name.
 - Description: a brief description.
-- Reference: the specification of the endpoint.
+- Reference: the specification of the endpoint and of the members of
+  its Endpoint Object.
 
 The initial contents are:
 
 | Name | Description | Reference |
 |---|---|---|
-| transfer | Transfer of Messages between servers | {{transfer}} of RFC XXXX |
-| submission | Submission of Messages by Clients | {{submission}} of RFC XXXX |
-| identities | Identities of an authenticated Client | {{identities}} of RFC XXXX |
+| transfer | Transfer of Messages between servers | {{transfer}} and {{endpoint-objects}} of RFC XXXX |
+| submission | Submission of Messages by Clients, and identities of an authenticated Client | {{submission}} and {{endpoint-objects}} of RFC XXXX |
 
 ### HMTP Content Encodings {#iana-encodings}
 
@@ -2694,7 +3142,9 @@ Cache-Control: max-age=86400
   "versions": {
     "1": {
       "endpoints": {
-        "transfer": "/hmtp/v1/transfer"
+        "transfer": {
+          "uri": "/hmtp/v1/transfer"
+        }
       }
     }
   },
@@ -2714,7 +3164,9 @@ Cache-Control: max-age=86400
 
 The Sending Server transfers a Message with a large attachment by
 reference.  The Receiving Server accepts the Message and retrieves the
-attachment after responding:
+attachment after responding, which it indicates with the status code
+202 (Accepted).  The Sending Server keeps the attachment available
+until its "expires" timestamp:
 
 ~~~ http-message
 NOTE: '\' line wrapping per RFC 8792
@@ -2754,12 +3206,11 @@ Signature: hmtp=:Zm9vYmFyZXhhbXBsZXNpZ25hdHVyZXZhbHVlbm90cmVh\
   }
 }
 
-HTTP/1.1 200 OK
+HTTP/1.1 202 Accepted
 Content-Type: application/json
 
 {
   "queueId": "8Jk2Pq7Xv1",
-  "content": "pending",
   "recipients": [
     {"address": "bob@example.net", "result": "accepted"}
   ]
