@@ -2793,7 +2793,7 @@ Operating both protocols:
 
 # Implementation Status
 
-TODO list implementations.
+No implementations are known at the time of writing.
 
 # Security Considerations {#security}
 
@@ -3284,8 +3284,3 @@ Content-Type: application/json
   ]
 }
 ~~~
-
-# Acknowledgments
-{:numbered="false"}
-
-TODO acknowledge.
