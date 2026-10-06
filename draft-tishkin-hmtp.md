@@ -3285,8 +3285,6 @@ Content-Type: application/json
 }
 ~~~
 
-TODO examples.
-
 # Acknowledgments
 {:numbered="false"}
 
