@@ -113,19 +113,25 @@ informative:
 
 This document specifies the HTTP Mail Transfer Protocol (HMTP), a
 protocol for the submission and transfer of Internet mail over HTTPS.
-HMTP covers both the submission of messages by clients to their mail
-service and the transfer of messages between mail servers.  Each
-message is carried unmodified in the existing Internet Message Format
-inside a JSON envelope that holds the information needed for
-delivery.  Large messages and attachments can be transferred by
-reference, with their integrity protected by cryptographic hashes.
-Requests are authenticated by signatures bound to the sending domain,
-using keys published with the DomainKeys Identified Mail (DKIM) key
-publication mechanism, which allows receivers to identify senders
-independently of their IP addresses.  Servers discover HMTP endpoints
-through DNS.  To allow incremental deployment alongside existing mail
-infrastructure, a server can optionally fall back to the Simple Mail
-Transfer Protocol (SMTP) when a peer does not support HMTP.
+HMTP retains what SMTP and the mail system built around it have
+proven, namely the Internet Message Format, the separation of envelope
+and message, and the semantics of delivery and delivery status
+notifications, and adds what SMTP provides only through optional
+extensions or not at all.  Security is built in: transport encryption is
+mandatory, and every transfer request is signed on behalf of the sending
+domain, using keys published with the DomainKeys Identified Mail (DKIM)
+key publication mechanism, so that receivers can identify senders
+independently of their IP addresses.  Requests carry identifiers that
+make retries safe, failures are reported per recipient as structured
+problem details with a mapping to SMTP status codes, and extensions are
+declared explicitly as capabilities.  Messages are carried unmodified
+inside a JSON envelope, and large messages and attachments can be
+transferred by reference, with their integrity protected by
+cryptographic hashes.  Servers discover HMTP endpoints through DNS and
+a well-known URI, and a domain can publish a policy that prevents
+downgrade to SMTP.  HMTP does not depend on SMTP, but an implementation
+can optionally fall back to SMTP when a peer does not support HMTP, so
+that it can be deployed incrementally alongside existing systems.
 
 --- middle
 
@@ -143,6 +149,19 @@ authorization with SPF {{RFC7208}}, message signing with DKIM
 downgrade protection with MTA-STS {{RFC8461}} and DANE {{RFC7672}}.
 Each of these mechanisms is useful, but together they form a complex
 system that is difficult to deploy and operate correctly.
+
+This document takes a different approach.  Instead of adding another
+mechanism on top of SMTP, it defines a new protocol that keeps what has
+proven itself in Internet mail and builds the rest on HTTPS.  The
+message format, the separation of envelope and message, and the
+semantics of delivery and delivery status notifications are taken from
+SMTP, so that HMTP and SMTP can coexist and a message can pass through
+both.  Security is part of the base protocol rather than a set of
+optional extensions: transport encryption is mandatory, and every
+request is authenticated.  In addition, HMTP provides functionality that
+SMTP lacks, such as request identifiers that make retries safe,
+explicitly declared extensions, structured per-recipient errors, and the
+transfer of large content by reference.
 
 ## Problem Statement
 
@@ -187,6 +206,12 @@ No protection against duplicate delivery:
   tell whether the message was accepted.  Retrying the transaction
   can result in the message being delivered twice.
 
+No standard HTTP interface:
+: Applications increasingly submit mail through HTTP APIs offered by
+  individual products and services.  These APIs are proprietary and
+  mutually incompatible, and none of them can be used to transfer mail
+  between independent domains.
+
 ## Overview of HMTP
 
 HMTP uses HTTP {{RFC9110}} over TLS as its transport and a JSON
@@ -218,11 +243,12 @@ properties are:
   reputation rather than on IP address reputation, and allows
   senders to operate behind proxies and content delivery networks.
 
-- Content may be transferred by reference.  A message, or any part
-  of it such as an attachment, may be provided as a URL together
-  with its size and cryptographic hash.  The receiving server
-  retrieves such content directly from where it is stored, so that
-  large content does not have to be carried in every request.
+- Content may be transferred by reference.  A message, or any part of it
+  such as an attachment, may be provided as a URL together with its size
+  and cryptographic hash.  The receiving server retrieves such content
+  directly from where it is stored, either before it responds or after
+  it has accepted the message, so that large content does not have to be
+  carried in every request.
 
 - Requests are idempotent.  Each request carries an identifier that
   allows the receiving server to recognize a retried request and
@@ -234,7 +260,12 @@ properties are:
 
 - Errors are structured.  Failures are reported using Problem Details
   for HTTP APIs {{RFC9457}}, with a defined mapping to SMTP enhanced
-  status codes.
+  status codes.  The result is reported separately for each recipient.
+
+- The protocol is extensible.  Servers advertise optional extensions,
+  called capabilities, in the Capabilities Document, and requests
+  indicate the capabilities they use, so that new functionality can be
+  added without changing the base protocol.
 
 - Deployment is incremental.  HMTP is a complete protocol on its own
   and does not depend on SMTP.  An implementation can optionally
@@ -246,11 +277,78 @@ properties are:
 
 HMTP defines two roles: submission, in which a client hands a message
 to its mail service, and transfer, in which one mail server delivers
-a message to another.  Clients authenticate to their submission
-server using HTTP authentication.  Basic authentication {{RFC7617}}
-provides compatibility with existing SMTP AUTH credentials, and
-bearer tokens {{RFC6750}} obtained through OAuth 2.0 {{RFC6749}} are
-supported for deployments that require stronger authentication.
+a message to another.  Both use the same data model.  Clients
+authenticate to their submission server using HTTP authentication.
+Basic authentication {{RFC7617}} provides compatibility with existing
+SMTP AUTH credentials, and bearer tokens {{RFC6750}} obtained through
+OAuth 2.0 {{RFC6749}} are supported for deployments that require
+stronger authentication.
+
+## Relationship to SMTP {#relationship-to-smtp}
+
+HMTP is not an extension or a revision of SMTP and does not update
+{{RFC5321}}.  It is also more than a new transport for the SMTP mail
+model.  HMTP takes from SMTP the parts on which the rest of the mail
+system depends and redesigns the protocol around them, with security and
+extensibility built in.  {{tab-smtp}} lists the main SMTP concepts and
+their HMTP counterparts.
+
+| SMTP | HMTP |
+|---|---|
+| MX records | SVCB record at `_hmtp.<domain>` |
+| EHLO and extension keywords | Capabilities Document and capabilities |
+| STARTTLS, optional | HTTPS, mandatory |
+| Ports 25 and 587 | Port 443 by default |
+| SMTP AUTH | HTTP authentication |
+| MAIL FROM | Envelope member "from" |
+| RCPT TO | Envelope member "to" |
+| BODY, SMTPUTF8, REQUIRETLS | "body", "smtpUtf8", "requireTls" |
+| DSN parameters | Envelope member "dsn" |
+| DATA and BDAT | "message", inline or by reference |
+| SIZE | Limit "maxMessageSize" |
+| PIPELINING | Concurrent requests over HTTP/2 or HTTP/3 |
+| Reply and enhanced status codes | Problem details, "smtpStatus" |
+| Successful reply to DATA | Result "accepted" for a recipient |
+| Received field "with ESMTP" | Received field "with HMTP" |
+{: #tab-smtp title="SMTP Concepts and Their Counterparts in HMTP"}
+
+The counterparts are specified in {{dns-record}},
+{{capabilities-document}}, {{capabilities}}, {{signing}},
+{{client-authentication}}, {{envelope}}, {{content-object}},
+{{problem-details}}, {{transfer-response}}, and {{trace}}.
+
+The following parts of the mail system are the same for both protocols:
+the Internet Message Format, DKIM and DMARC evaluation of the message,
+the meaning of accepting responsibility for a message, delivery status
+notifications, and enhanced status codes.  This is what allows a message
+to travel over a path that combines HMTP and SMTP hops without
+conversion ({{coexistence}}).
+
+In addition, HMTP provides the following, which SMTP offers only through
+optional extensions or not at all:
+
+- Security by default.  TLS with certificate validation is mandatory,
+  every transfer request is authenticated by the Sending Domain, and a
+  domain can prevent downgrade to SMTP.  In SMTP, the corresponding
+  functions are provided by STARTTLS, SPF, DKIM, DMARC, MTA-STS, and
+  DANE, each of which is deployed separately.
+
+- Request identifiers.  A Transfer Identifier in every request prevents
+  duplicate delivery when the request is retried ({{idempotency}}).
+
+- Declared extensions.  Capabilities are advertised with their
+  parameters in the Capabilities Document, are listed in the requests
+  that depend on them, and are either registered with IANA or named by
+  URIs ({{capabilities}}).
+
+- Structured errors.  Each failure is reported per recipient as a
+  problem details object with a registered type ({{problem-details}}).
+
+- Content by reference.  Large messages and attachments do not have to
+  be carried in every request ({{content-object}}).
+
+HMTP does not provide the line-oriented, interactive dialogue of SMTP;
+each request carries a complete transaction.
 
 ## Relationship to Other Work
 
@@ -270,7 +368,8 @@ Delivery {{OCI-EMAIL}} likewise offer proprietary HTTP APIs for
 submitting messages.  Each of these APIs is specific to one product
 or service and covers only submission to it, while delivery to other
 domains continues to use SMTP.  Because each service defines its own
-API, an application that integrates with one of them cannot switch to another without being modified.  HMTP follows a similar model, an
+API, an application that integrates with one of them cannot switch to
+another without being modified.  HMTP follows a similar model, an
 envelope that accompanies an unmodified message, and standardizes it
 for both submission and transfer between independent domains,
 together with discovery, domain-based authentication, and a common
@@ -1104,10 +1203,10 @@ number of such references, subject to the limit on segments described
 in {{content-object}}.
 
 Attachments are usually encoded with the base64
-Content-Transfer-Encoding {{RFC2045}}, while the content stored at a URI is usually the
-original, unencoded file.  The "encoding" member allows a Content
-Reference to refer to the unencoded file.  This document defines the
-following encoding:
+Content-Transfer-Encoding {{RFC2045}}, while the content stored at a
+URI is usually the original, unencoded file.  The "encoding" member
+allows a Content Reference to refer to the unencoded file.  This
+document defines the following encoding:
 
 base64:
 : The retrieved representation data is encoded using base64 as
@@ -1768,9 +1867,9 @@ Client can safely retry a submission after a lost response.
 The "authentication" member of the Submission Endpoint Object
 ({{endpoint-objects}}) lists the HTTP authentication schemes
 {{RFC9110}} accepted by the Submission Server for the submission and
-identities endpoints, using the scheme names from the "HTTP Authentication Scheme
-Registry".  Scheme names are compared without regard to case.  This
-document uses the following schemes:
+identities endpoints, using the scheme names from the "HTTP
+Authentication Scheme Registry".  Scheme names are compared without
+regard to case.  This document uses the following schemes:
 
 basic:
 : The "Basic" scheme {{RFC7617}}.  The user-id is the name of the
