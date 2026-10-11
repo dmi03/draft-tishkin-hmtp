@@ -9,19 +9,25 @@
 <meta content="
        This document specifies the HTTP Mail Transfer Protocol (HMTP), a
 protocol for the submission and transfer of Internet mail over HTTPS.
-HMTP covers both the submission of messages by clients to their mail
-service and the transfer of messages between mail servers.  Each
-message is carried unmodified in the existing Internet Message Format
-inside a JSON envelope that holds the information needed for
-delivery.  Large messages and attachments can be transferred by
-reference, with their integrity protected by cryptographic hashes.
-Requests are authenticated by signatures bound to the sending domain,
-using keys published with the DomainKeys Identified Mail (DKIM) key
-publication mechanism, which allows receivers to identify senders
-independently of their IP addresses.  Servers discover HMTP endpoints
-through DNS.  To allow incremental deployment alongside existing mail
-infrastructure, a server can optionally fall back to the Simple Mail
-Transfer Protocol (SMTP) when a peer does not support HMTP. 
+HMTP retains what SMTP and the mail system built around it have
+proven, namely the Internet Message Format, the separation of envelope
+and message, and the semantics of delivery and delivery status
+notifications, and adds what SMTP provides only through optional
+extensions or not at all.  Security is built in: transport encryption is
+mandatory, and every transfer request is signed on behalf of the sending
+domain, using keys published with the DomainKeys Identified Mail (DKIM)
+key publication mechanism, so that receivers can identify senders
+independently of their IP addresses.  Requests carry identifiers that
+make retries safe, failures are reported per recipient as structured
+problem details with a mapping to SMTP status codes, and extensions are
+declared explicitly as capabilities.  Messages are carried unmodified
+inside a JSON envelope, and large messages and attachments can be
+transferred by reference, with their integrity protected by
+cryptographic hashes.  Servers discover HMTP endpoints through DNS and
+a well-known URI, and a domain can publish a policy that prevents
+downgrade to SMTP.  HMTP does not depend on SMTP, but an implementation
+can optionally fall back to SMTP when a peer does not support HMTP, so
+that it can be deployed incrementally alongside existing systems. 
     " name="description">
 <meta content="xml2rfc 3.34.1" name="generator">
 <meta content="email" name="keyword">
@@ -1062,7 +1068,7 @@ svg {
 </tr></thead>
 <tfoot><tr>
 <td class="left">Tishkin</td>
-<td class="center">Expires 9 April 2027</td>
+<td class="center">Expires 14 April 2027</td>
 <td class="right">[Page]</td>
 </tr></tfoot>
 </table>
@@ -1075,12 +1081,12 @@ svg {
 <dd class="internet-draft">draft-tishkin-hmtp-latest</dd>
 <dt class="label-published">Published:</dt>
 <dd class="published">
-<time datetime="2026-10-06" class="published">6 October 2026</time>
+<time datetime="2026-10-11" class="published">11 October 2026</time>
     </dd>
 <dt class="label-intended-status">Intended Status:</dt>
 <dd class="intended-status">Standards Track</dd>
 <dt class="label-expires">Expires:</dt>
-<dd class="expires"><time datetime="2027-04-09">9 April 2027</time></dd>
+<dd class="expires"><time datetime="2027-04-14">14 April 2027</time></dd>
 <dt class="label-authors">Author:</dt>
 <dd class="authors">
 <div class="author">
@@ -1095,19 +1101,25 @@ svg {
       <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
 <p id="section-abstract-1">This document specifies the HTTP Mail Transfer Protocol (HMTP), a
 protocol for the submission and transfer of Internet mail over HTTPS.
-HMTP covers both the submission of messages by clients to their mail
-service and the transfer of messages between mail servers.  Each
-message is carried unmodified in the existing Internet Message Format
-inside a JSON envelope that holds the information needed for
-delivery.  Large messages and attachments can be transferred by
-reference, with their integrity protected by cryptographic hashes.
-Requests are authenticated by signatures bound to the sending domain,
-using keys published with the DomainKeys Identified Mail (DKIM) key
-publication mechanism, which allows receivers to identify senders
-independently of their IP addresses.  Servers discover HMTP endpoints
-through DNS.  To allow incremental deployment alongside existing mail
-infrastructure, a server can optionally fall back to the Simple Mail
-Transfer Protocol (SMTP) when a peer does not support HMTP.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+HMTP retains what SMTP and the mail system built around it have
+proven, namely the Internet Message Format, the separation of envelope
+and message, and the semantics of delivery and delivery status
+notifications, and adds what SMTP provides only through optional
+extensions or not at all.  Security is built in: transport encryption is
+mandatory, and every transfer request is signed on behalf of the sending
+domain, using keys published with the DomainKeys Identified Mail (DKIM)
+key publication mechanism, so that receivers can identify senders
+independently of their IP addresses.  Requests carry identifiers that
+make retries safe, failures are reported per recipient as structured
+problem details with a mapping to SMTP status codes, and extensions are
+declared explicitly as capabilities.  Messages are carried unmodified
+inside a JSON envelope, and large messages and attachments can be
+transferred by reference, with their integrity protected by
+cryptographic hashes.  Servers discover HMTP endpoints through DNS and
+a well-known URI, and a domain can publish a policy that prevents
+downgrade to SMTP.  HMTP does not depend on SMTP, but an implementation
+can optionally fall back to SMTP when a peer does not support HMTP, so
+that it can be deployed incrementally alongside existing systems.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
 </section>
 <section class="note rfcEditorRemove" id="section-note.1">
       <h2 id="name-about-this-document">
@@ -1138,7 +1150,7 @@ Transfer Protocol (SMTP) when a peer does not support HMTP.<a href="#section-abs
         time. It is inappropriate to use Internet-Drafts as reference
         material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
 <p id="section-boilerplate.1-4">
-        This Internet-Draft will expire on 9 April 2027.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+        This Internet-Draft will expire on 14 April 2027.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="copyright">
@@ -1177,10 +1189,13 @@ Transfer Protocol (SMTP) when a peer does not support HMTP.<a href="#section-abs
                 <p id="section-toc.1-1.1.2.2.1" class="keepWithNext"><a href="#section-1.2" class="auto internal xref">1.2</a>.  <a href="#name-overview-of-hmtp" class="internal xref">Overview of HMTP</a></p>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.3">
-                <p id="section-toc.1-1.1.2.3.1" class="keepWithNext"><a href="#section-1.3" class="auto internal xref">1.3</a>.  <a href="#name-relationship-to-other-work" class="internal xref">Relationship to Other Work</a></p>
+                <p id="section-toc.1-1.1.2.3.1" class="keepWithNext"><a href="#section-1.3" class="auto internal xref">1.3</a>.  <a href="#name-relationship-to-smtp" class="internal xref">Relationship to SMTP</a></p>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.4">
-                <p id="section-toc.1-1.1.2.4.1"><a href="#section-1.4" class="auto internal xref">1.4</a>.  <a href="#name-non-goals" class="internal xref">Non-Goals</a></p>
+                <p id="section-toc.1-1.1.2.4.1"><a href="#section-1.4" class="auto internal xref">1.4</a>.  <a href="#name-relationship-to-other-work" class="internal xref">Relationship to Other Work</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.5">
+                <p id="section-toc.1-1.1.2.5.1"><a href="#section-1.5" class="auto internal xref">1.5</a>.  <a href="#name-non-goals" class="internal xref">Non-Goals</a></p>
 </li>
             </ul>
 </li>
@@ -1489,6 +1504,18 @@ authorization with SPF <span>[<a href="#RFC7208" class="cite xref">RFC7208</a>]<
 downgrade protection with MTA-STS <span>[<a href="#RFC8461" class="cite xref">RFC8461</a>]</span> and DANE <span>[<a href="#RFC7672" class="cite xref">RFC7672</a>]</span>.
 Each of these mechanisms is useful, but together they form a complex
 system that is difficult to deploy and operate correctly.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">This document takes a different approach.  Instead of adding another
+mechanism on top of SMTP, it defines a new protocol that keeps what has
+proven itself in Internet mail and builds the rest on HTTPS.  The
+message format, the separation of envelope and message, and the
+semantics of delivery and delivery status notifications are taken from
+SMTP, so that HMTP and SMTP can coexist and a message can pass through
+both.  Security is part of the base protocol rather than a set of
+optional extensions: transport encryption is mandatory, and every
+request is authenticated.  In addition, HMTP provides functionality that
+SMTP lacks, such as request identifiers that make retries safe,
+explicitly declared extensions, structured per-recipient errors, and the
+transfer of large content by reference.<a href="#section-1-2" class="pilcrow">¶</a></p>
 <div id="problem-statement">
 <section id="section-1.1">
         <h3 id="name-problem-statement">
@@ -1546,6 +1573,14 @@ but before the client has received the reply, the client cannot
 tell whether the message was accepted.  Retrying the transaction
 can result in the message being delivered twice.<a href="#section-1.1-2.12.1" class="pilcrow">¶</a></p>
 </dd>
+          <dd class="break"></dd>
+<dt id="section-1.1-2.13">No standard HTTP interface:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.1-2.14">
+            <p id="section-1.1-2.14.1">Applications increasingly submit mail through HTTP APIs offered by
+individual products and services.  These APIs are proprietary and
+mutually incompatible, and none of them can be used to transfer mail
+between independent domains.<a href="#section-1.1-2.14.1" class="pilcrow">¶</a></p>
+</dd>
         <dd class="break"></dd>
 </dl>
 </section>
@@ -1589,11 +1624,12 @@ reputation rather than on IP address reputation, and allows
 senders to operate behind proxies and content delivery networks.<a href="#section-1.2-2.4.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-1.2-2.5">
-            <p id="section-1.2-2.5.1">Content may be transferred by reference.  A message, or any part
-of it such as an attachment, may be provided as a URL together
-with its size and cryptographic hash.  The receiving server
-retrieves such content directly from where it is stored, so that
-large content does not have to be carried in every request.<a href="#section-1.2-2.5.1" class="pilcrow">¶</a></p>
+            <p id="section-1.2-2.5.1">Content may be transferred by reference.  A message, or any part of it
+such as an attachment, may be provided as a URL together with its size
+and cryptographic hash.  The receiving server retrieves such content
+directly from where it is stored, either before it responds or after
+it has accepted the message, so that large content does not have to be
+carried in every request.<a href="#section-1.2-2.5.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-1.2-2.6">
             <p id="section-1.2-2.6.1">Requests are idempotent.  Each request carries an identifier that
@@ -1608,64 +1644,218 @@ URI <span>[<a href="#RFC8615" class="cite xref">RFC8615</a>]</span> describes th
           <li class="normal" id="section-1.2-2.8">
             <p id="section-1.2-2.8.1">Errors are structured.  Failures are reported using Problem Details
 for HTTP APIs <span>[<a href="#RFC9457" class="cite xref">RFC9457</a>]</span>, with a defined mapping to SMTP enhanced
-status codes.<a href="#section-1.2-2.8.1" class="pilcrow">¶</a></p>
+status codes.  The result is reported separately for each recipient.<a href="#section-1.2-2.8.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-1.2-2.9">
-            <p id="section-1.2-2.9.1">Deployment is incremental.  HMTP is a complete protocol on its own
+            <p id="section-1.2-2.9.1">The protocol is extensible.  Servers advertise optional extensions,
+called capabilities, in the Capabilities Document, and requests
+indicate the capabilities they use, so that new functionality can be
+added without changing the base protocol.<a href="#section-1.2-2.9.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-1.2-2.10">
+            <p id="section-1.2-2.10.1">Deployment is incremental.  HMTP is a complete protocol on its own
 and does not depend on SMTP.  An implementation can optionally
 deliver messages using SMTP when a receiving domain does not
 publish an HMTP endpoint.  Because the message is carried
 unmodified, such a fallback requires no conversion of the message,
 provided that the SMTP server supports the SMTP extensions that the
-message requires.<a href="#section-1.2-2.9.1" class="pilcrow">¶</a></p>
+message requires.<a href="#section-1.2-2.10.1" class="pilcrow">¶</a></p>
 </li>
         </ul>
 <p id="section-1.2-3">HMTP defines two roles: submission, in which a client hands a message
 to its mail service, and transfer, in which one mail server delivers
-a message to another.  Clients authenticate to their submission
-server using HTTP authentication.  Basic authentication <span>[<a href="#RFC7617" class="cite xref">RFC7617</a>]</span>
-provides compatibility with existing SMTP AUTH credentials, and
-bearer tokens <span>[<a href="#RFC6750" class="cite xref">RFC6750</a>]</span> obtained through OAuth 2.0 <span>[<a href="#RFC6749" class="cite xref">RFC6749</a>]</span> are
-supported for deployments that require stronger authentication.<a href="#section-1.2-3" class="pilcrow">¶</a></p>
+a message to another.  Both use the same data model.  Clients
+authenticate to their submission server using HTTP authentication.
+Basic authentication <span>[<a href="#RFC7617" class="cite xref">RFC7617</a>]</span> provides compatibility with existing
+SMTP AUTH credentials, and bearer tokens <span>[<a href="#RFC6750" class="cite xref">RFC6750</a>]</span> obtained through
+OAuth 2.0 <span>[<a href="#RFC6749" class="cite xref">RFC6749</a>]</span> are supported for deployments that require
+stronger authentication.<a href="#section-1.2-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="relationship-to-smtp">
+<section id="section-1.3">
+        <h3 id="name-relationship-to-smtp">
+<a href="#section-1.3" class="section-number selfRef">1.3. </a><a href="#name-relationship-to-smtp" class="section-name selfRef">Relationship to SMTP</a>
+        </h3>
+<p id="section-1.3-1">HMTP is not an extension or a revision of SMTP and does not update
+<span>[<a href="#RFC5321" class="cite xref">RFC5321</a>]</span>.  It is also more than a new transport for the SMTP mail
+model.  HMTP takes from SMTP the parts on which the rest of the mail
+system depends and redesigns the protocol around them, with security and
+extensibility built in.  <a href="#tab-smtp" class="auto internal xref">Table 1</a> lists the main SMTP concepts and
+their HMTP counterparts.<a href="#section-1.3-1" class="pilcrow">¶</a></p>
+<span id="name-smtp-concepts-and-their-cou"></span><div id="tab-smtp">
+<table class="center" id="table-1">
+          <caption>
+<a href="#table-1" class="selfRef">Table 1</a>:
+<a href="#name-smtp-concepts-and-their-cou" class="selfRef">SMTP Concepts and Their Counterparts in HMTP</a>
+          </caption>
+<thead>
+            <tr>
+              <th class="text-left" rowspan="1" colspan="1">SMTP</th>
+              <th class="text-left" rowspan="1" colspan="1">HMTP</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">MX records</td>
+              <td class="text-left" rowspan="1" colspan="1">SVCB record at <code>_hmtp.&lt;domain&gt;</code>
+</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">EHLO and extension keywords</td>
+              <td class="text-left" rowspan="1" colspan="1">Capabilities Document and capabilities</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">STARTTLS, optional</td>
+              <td class="text-left" rowspan="1" colspan="1">HTTPS, mandatory</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">Ports 25 and 587</td>
+              <td class="text-left" rowspan="1" colspan="1">Port 443 by default</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">SMTP AUTH</td>
+              <td class="text-left" rowspan="1" colspan="1">HTTP authentication</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">MAIL FROM</td>
+              <td class="text-left" rowspan="1" colspan="1">Envelope member "from"</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">RCPT TO</td>
+              <td class="text-left" rowspan="1" colspan="1">Envelope member "to"</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">BODY, SMTPUTF8, REQUIRETLS</td>
+              <td class="text-left" rowspan="1" colspan="1">"body", "smtpUtf8", "requireTls"</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">DSN parameters</td>
+              <td class="text-left" rowspan="1" colspan="1">Envelope member "dsn"</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">DATA and BDAT</td>
+              <td class="text-left" rowspan="1" colspan="1">"message", inline or by reference</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">SIZE</td>
+              <td class="text-left" rowspan="1" colspan="1">Limit "maxMessageSize"</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">PIPELINING</td>
+              <td class="text-left" rowspan="1" colspan="1">Concurrent requests over HTTP/2 or HTTP/3</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">Reply and enhanced status codes</td>
+              <td class="text-left" rowspan="1" colspan="1">Problem details, "smtpStatus"</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">Successful reply to DATA</td>
+              <td class="text-left" rowspan="1" colspan="1">Result "accepted" for a recipient</td>
+            </tr>
+            <tr>
+              <td class="text-left" rowspan="1" colspan="1">Received field "with ESMTP"</td>
+              <td class="text-left" rowspan="1" colspan="1">Received field "with HMTP"</td>
+            </tr>
+          </tbody>
+        </table>
+</div>
+<p id="section-1.3-3">The counterparts are specified in <a href="#dns-record" class="auto internal xref">Section 4.1</a>,
+<a href="#capabilities-document" class="auto internal xref">Section 4.2</a>, <a href="#capabilities" class="auto internal xref">Section 5.4</a>, <a href="#signing" class="auto internal xref">Section 8</a>,
+<a href="#client-authentication" class="auto internal xref">Section 7.1</a>, <a href="#envelope" class="auto internal xref">Section 5.1</a>, <a href="#content-object" class="auto internal xref">Section 5.2</a>,
+<a href="#problem-details" class="auto internal xref">Section 9.1</a>, <a href="#transfer-response" class="auto internal xref">Section 6.3</a>, and <a href="#trace" class="auto internal xref">Section 6.5</a>.<a href="#section-1.3-3" class="pilcrow">¶</a></p>
+<p id="section-1.3-4">The following parts of the mail system are the same for both protocols:
+the Internet Message Format, DKIM and DMARC evaluation of the message,
+the meaning of accepting responsibility for a message, delivery status
+notifications, and enhanced status codes.  This is what allows a message
+to travel over a path that combines HMTP and SMTP hops without
+conversion (<a href="#coexistence" class="auto internal xref">Section 3.3</a>).<a href="#section-1.3-4" class="pilcrow">¶</a></p>
+<p id="section-1.3-5">In addition, HMTP provides the following, which SMTP offers only through
+optional extensions or not at all:<a href="#section-1.3-5" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-1.3-6.1">
+            <p id="section-1.3-6.1.1">Security by default.  TLS with certificate validation is mandatory,
+every transfer request is authenticated by the Sending Domain, and a
+domain can prevent downgrade to SMTP.  In SMTP, the corresponding
+functions are provided by STARTTLS, SPF, DKIM, DMARC, MTA-STS, and
+DANE, each of which is deployed separately.<a href="#section-1.3-6.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-1.3-6.2">
+            <p id="section-1.3-6.2.1">Request identifiers.  A Transfer Identifier in every request prevents
+duplicate delivery when the request is retried (<a href="#idempotency" class="auto internal xref">Section 6.4</a>).<a href="#section-1.3-6.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-1.3-6.3">
+            <p id="section-1.3-6.3.1">Declared extensions.  Capabilities are advertised with their
+parameters in the Capabilities Document, are listed in the requests
+that depend on them, and are either registered with IANA or named by
+URIs (<a href="#capabilities" class="auto internal xref">Section 5.4</a>).<a href="#section-1.3-6.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-1.3-6.4">
+            <p id="section-1.3-6.4.1">Structured errors.  Each failure is reported per recipient as a
+problem details object with a registered type (<a href="#problem-details" class="auto internal xref">Section 9.1</a>).<a href="#section-1.3-6.4.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-1.3-6.5">
+            <p id="section-1.3-6.5.1">Content by reference.  Large messages and attachments do not have to
+be carried in every request (<a href="#content-object" class="auto internal xref">Section 5.2</a>).<a href="#section-1.3-6.5.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-1.3-7">HMTP does not provide the line-oriented, interactive dialogue of SMTP;
+each request carries a complete transaction.<a href="#section-1.3-7" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="relationship-to-other-work">
-<section id="section-1.3">
+<section id="section-1.4">
         <h3 id="name-relationship-to-other-work">
-<a href="#section-1.3" class="section-number selfRef">1.3. </a><a href="#name-relationship-to-other-work" class="section-name selfRef">Relationship to Other Work</a>
+<a href="#section-1.4" class="section-number selfRef">1.4. </a><a href="#name-relationship-to-other-work" class="section-name selfRef">Relationship to Other Work</a>
         </h3>
-<p id="section-1.3-1">The JSON Meta Application Protocol (JMAP) <span>[<a href="#RFC8620" class="cite xref">RFC8620</a>]</span> <span>[<a href="#RFC8621" class="cite xref">RFC8621</a>]</span>
+<p id="section-1.4-1">The JSON Meta Application Protocol (JMAP) <span>[<a href="#RFC8620" class="cite xref">RFC8620</a>]</span> <span>[<a href="#RFC8621" class="cite xref">RFC8621</a>]</span>
 provides HTTP-based access to mailboxes and supports message
 submission, but it does not define transfer of messages between
 mail servers.  HMTP is complementary: a JMAP server can use HMTP to
-deliver submitted messages to other domains.<a href="#section-1.3-1" class="pilcrow">¶</a></p>
-<p id="section-1.3-2">HMTP does not replace DKIM.  DKIM signatures inside the message
+deliver submitted messages to other domains.<a href="#section-1.4-1" class="pilcrow">¶</a></p>
+<p id="section-1.4-2">Some mail transfer agents provide HTTP APIs for injecting messages.
+For example, the Halon MTA accepts a multipart HTTP request that
+carries a JSON object with the envelope sender and recipients
+together with the message in Internet Message Format, authenticated
+with an API key <span>[<a href="#HALON" class="cite xref">HALON</a>]</span>.  Sending services such as Amazon Simple
+Email Service <span>[<a href="#AWS-SES" class="cite xref">AWS-SES</a>]</span> and Oracle Cloud Infrastructure Email
+Delivery <span>[<a href="#OCI-EMAIL" class="cite xref">OCI-EMAIL</a>]</span> likewise offer proprietary HTTP APIs for
+submitting messages.  Each of these APIs is specific to one product
+or service and covers only submission to it, while delivery to other
+domains continues to use SMTP.  Because each service defines its own
+API, an application that integrates with one of them cannot switch to
+another without being modified.  HMTP follows a similar model, an
+envelope that accompanies an unmodified message, and standardizes it
+for both submission and transfer between independent domains,
+together with discovery, domain-based authentication, and a common
+error model.<a href="#section-1.4-2" class="pilcrow">¶</a></p>
+<p id="section-1.4-3">HMTP does not replace DKIM.  DKIM signatures inside the message
 continue to protect the message across all hops, including hops that
-use SMTP.  HMTP signatures protect each individual HMTP request.<a href="#section-1.3-2" class="pilcrow">¶</a></p>
+use SMTP.  HMTP signatures protect each individual HMTP request.<a href="#section-1.4-3" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="non-goals">
-<section id="section-1.4">
+<section id="section-1.5">
         <h3 id="name-non-goals">
-<a href="#section-1.4" class="section-number selfRef">1.4. </a><a href="#name-non-goals" class="section-name selfRef">Non-Goals</a>
+<a href="#section-1.5" class="section-number selfRef">1.5. </a><a href="#name-non-goals" class="section-name selfRef">Non-Goals</a>
         </h3>
-<p id="section-1.4-1">The following are outside the scope of this document:<a href="#section-1.4-1" class="pilcrow">¶</a></p>
+<p id="section-1.5-1">The following are outside the scope of this document:<a href="#section-1.5-1" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="section-1.4-2.1">
-            <p id="section-1.4-2.1.1">Defining a new format for messages.  Alternative message formats
-may be defined as extensions.<a href="#section-1.4-2.1.1" class="pilcrow">¶</a></p>
+<li class="normal" id="section-1.5-2.1">
+            <p id="section-1.5-2.1.1">Defining a new format for messages.  Alternative message formats
+may be defined as extensions.<a href="#section-1.5-2.1.1" class="pilcrow">¶</a></p>
 </li>
-          <li class="normal" id="section-1.4-2.2">
-            <p id="section-1.4-2.2.1">Defining spam filtering or reputation algorithms.  These remain a
-matter of local policy at the receiving server.<a href="#section-1.4-2.2.1" class="pilcrow">¶</a></p>
+          <li class="normal" id="section-1.5-2.2">
+            <p id="section-1.5-2.2.1">Defining spam filtering or reputation algorithms.  These remain a
+matter of local policy at the receiving server.<a href="#section-1.5-2.2.1" class="pilcrow">¶</a></p>
 </li>
-          <li class="normal" id="section-1.4-2.3">
-            <p id="section-1.4-2.3.1">Mailbox access and synchronization, which are addressed by IMAP
-<span>[<a href="#RFC9051" class="cite xref">RFC9051</a>]</span> and JMAP.<a href="#section-1.4-2.3.1" class="pilcrow">¶</a></p>
+          <li class="normal" id="section-1.5-2.3">
+            <p id="section-1.5-2.3.1">Mailbox access and synchronization, which are addressed by IMAP
+<span>[<a href="#RFC9051" class="cite xref">RFC9051</a>]</span> and JMAP.<a href="#section-1.5-2.3.1" class="pilcrow">¶</a></p>
 </li>
-          <li class="normal" id="section-1.4-2.4">
-            <p id="section-1.4-2.4.1">End-to-end encryption of messages, which continues to be provided
-by existing mechanisms such as OpenPGP and S/MIME.<a href="#section-1.4-2.4.1" class="pilcrow">¶</a></p>
+          <li class="normal" id="section-1.5-2.4">
+            <p id="section-1.5-2.4.1">End-to-end encryption of messages, which continues to be provided
+by existing mechanisms such as OpenPGP and S/MIME.<a href="#section-1.5-2.4.1" class="pilcrow">¶</a></p>
 </li>
         </ul>
 </section>
@@ -2703,10 +2893,10 @@ therefore to the following inline segment.  A Message may contain any
 number of such references, subject to the limit on segments described
 in <a href="#content-object" class="auto internal xref">Section 5.2</a>.<a href="#section-5.3-2" class="pilcrow">¶</a></p>
 <p id="section-5.3-3">Attachments are usually encoded with the base64
-Content-Transfer-Encoding <span>[<a href="#RFC2045" class="cite xref">RFC2045</a>]</span>, while the content stored at a URI is usually the
-original, unencoded file.  The "encoding" member allows a Content
-Reference to refer to the unencoded file.  This document defines the
-following encoding:<a href="#section-5.3-3" class="pilcrow">¶</a></p>
+Content-Transfer-Encoding <span>[<a href="#RFC2045" class="cite xref">RFC2045</a>]</span>, while the content stored at a
+URI is usually the original, unencoded file.  The "encoding" member
+allows a Content Reference to refer to the unencoded file.  This
+document defines the following encoding:<a href="#section-5.3-3" class="pilcrow">¶</a></p>
 <span class="break"></span><dl class="dlParallel" id="section-5.3-4">
           <dt id="section-5.3-4.1">base64:</dt>
           <dd style="margin-left: 1.5em" id="section-5.3-4.2">
@@ -3504,9 +3694,9 @@ Client can safely retry a submission after a lost response.<a href="#section-7-4
 <p id="section-7.1-1">The "authentication" member of the Submission Endpoint Object
 (<a href="#endpoint-objects" class="auto internal xref">Section 4.2.1</a>) lists the HTTP authentication schemes
 <span>[<a href="#RFC9110" class="cite xref">RFC9110</a>]</span> accepted by the Submission Server for the submission and
-identities endpoints, using the scheme names from the "HTTP Authentication Scheme
-Registry".  Scheme names are compared without regard to case.  This
-document uses the following schemes:<a href="#section-7.1-1" class="pilcrow">¶</a></p>
+identities endpoints, using the scheme names from the "HTTP
+Authentication Scheme Registry".  Scheme names are compared without
+regard to case.  This document uses the following schemes:<a href="#section-7.1-1" class="pilcrow">¶</a></p>
 <span class="break"></span><dl class="dlParallel" id="section-7.1-2">
           <dt id="section-7.1-2.1">basic:</dt>
           <dd style="margin-left: 1.5em" id="section-7.1-2.2">
@@ -4024,7 +4214,7 @@ unknown to the recipient of the problem details object.<a href="#section-9.1-4.2
 failure.  It is used when the failure is reported over SMTP, for
 example by a gateway (<a href="#gateways" class="auto internal xref">Section 10.3</a>) or in a delivery status
 notification (<a href="#dsn" class="auto internal xref">Section 9.3</a>).  If it is absent, the reply code from
-<a href="#tab-mapping" class="auto internal xref">Table 1</a> is used for registered problem types, and 451 or 550
+<a href="#tab-mapping" class="auto internal xref">Table 2</a> is used for registered problem types, and 451 or 550
 otherwise, depending on the class of "smtpStatus".<a href="#section-9.1-4.4.1" class="pilcrow">¶</a></p>
 </dd>
         <dd class="break"></dd>
@@ -4060,16 +4250,16 @@ Content-Language: en
         <h3 id="name-mapping-to-smtp-status-code">
 <a href="#section-9.2" class="section-number selfRef">9.2. </a><a href="#name-mapping-to-smtp-status-code" class="section-name selfRef">Mapping to SMTP Status Codes</a>
         </h3>
-<p id="section-9.2-1"><a href="#tab-mapping" class="auto internal xref">Table 1</a> lists the problem types defined by this document,
+<p id="section-9.2-1"><a href="#tab-mapping" class="auto internal xref">Table 2</a> lists the problem types defined by this document,
 whether they apply to a whole request ("Request"), to an individual
 Envelope Recipient ("Recipient"), or to both, and the HTTP status
 code, enhanced status code, and SMTP reply code to be used with them.
 Where two codes are given, the first is used for a temporary and the
 second for a permanent failure.<a href="#section-9.2-1" class="pilcrow">¶</a></p>
 <span id="name-hmtp-problem-types"></span><div id="tab-mapping">
-<table class="center" id="table-1">
+<table class="center" id="table-2">
           <caption>
-<a href="#table-1" class="selfRef">Table 1</a>:
+<a href="#table-2" class="selfRef">Table 2</a>:
 <a href="#name-hmtp-problem-types" class="selfRef">HMTP Problem Types</a>
           </caption>
 <thead>
@@ -4899,7 +5089,7 @@ a local agreement with the Receiving Server, as described in
 SMTP DATA or BDAT command.  In that case, it translates the result of
 the HMTP request into the SMTP reply, using the "smtpReply" and
 "smtpStatus" members of the problem details object, and the mapping
-in <a href="#tab-mapping" class="auto internal xref">Table 1</a>.  Otherwise, it accepts the Message, relays it
+in <a href="#tab-mapping" class="auto internal xref">Table 2</a>.  Otherwise, it accepts the Message, relays it
 later, and reports failures through DSNs.<a href="#section-10.3-5" class="pilcrow">¶</a></p>
 </section>
 </div>
@@ -5200,8 +5390,8 @@ privacy of the user.<a href="#section-14-6" class="pilcrow">¶</a></p>
         </h3>
 <p id="section-15.1-1">IANA is requested to add the following entry to the "Underscored and
 Globally Scoped DNS Node Names" registry <span>[<a href="#RFC8552" class="cite xref">RFC8552</a>]</span>:<a href="#section-15.1-1" class="pilcrow">¶</a></p>
-<table class="center" id="table-2">
-          <caption><a href="#table-2" class="selfRef">Table 2</a></caption>
+<table class="center" id="table-3">
+          <caption><a href="#table-3" class="selfRef">Table 3</a></caption>
 <thead>
             <tr>
               <th class="text-left" rowspan="1" colspan="1">RR Type</th>
@@ -5262,8 +5452,8 @@ registry <span>[<a href="#RFC8615" class="cite xref">RFC8615</a>]</span>:<a href
         </h3>
 <p id="section-15.3-1">IANA is requested to add the following entry to the "DKIM Service
 Types" registry <span>[<a href="#RFC6376" class="cite xref">RFC6376</a>]</span>:<a href="#section-15.3-1" class="pilcrow">¶</a></p>
-<table class="center" id="table-3">
-          <caption><a href="#table-3" class="selfRef">Table 3</a></caption>
+<table class="center" id="table-4">
+          <caption><a href="#table-4" class="selfRef">Table 4</a></caption>
 <thead>
             <tr>
               <th class="text-left" rowspan="1" colspan="1">Type</th>
@@ -5288,8 +5478,8 @@ Types" registry <span>[<a href="#RFC6376" class="cite xref">RFC6376</a>]</span>:
         </h3>
 <p id="section-15.4-1">IANA is requested to add the following entries to the "Mail
 Transmission Types" registry in the "Mail Parameters" registry group:<a href="#section-15.4-1" class="pilcrow">¶</a></p>
-<table class="center" id="table-4">
-          <caption><a href="#table-4" class="selfRef">Table 4</a></caption>
+<table class="center" id="table-5">
+          <caption><a href="#table-5" class="selfRef">Table 5</a></caption>
 <thead>
             <tr>
               <th class="text-left" rowspan="1" colspan="1">WITH protocol type</th>
@@ -5411,8 +5601,8 @@ its Endpoint Object.<a href="#section-15.6.2-2.3.1" class="pilcrow">¶</a></p>
 </li>
           </ul>
 <p id="section-15.6.2-3">The initial contents are:<a href="#section-15.6.2-3" class="pilcrow">¶</a></p>
-<table class="center" id="table-5">
-            <caption><a href="#table-5" class="selfRef">Table 5</a></caption>
+<table class="center" id="table-6">
+            <caption><a href="#table-6" class="selfRef">Table 6</a></caption>
 <thead>
               <tr>
                 <th class="text-left" rowspan="1" colspan="1">Name</th>
@@ -5456,8 +5646,8 @@ the "encoding" member of a Content Reference:<a href="#section-15.6.3-1" class="
 </li>
           </ul>
 <p id="section-15.6.3-3">The initial contents are:<a href="#section-15.6.3-3" class="pilcrow">¶</a></p>
-<table class="center" id="table-6">
-            <caption><a href="#table-6" class="selfRef">Table 6</a></caption>
+<table class="center" id="table-7">
+            <caption><a href="#table-7" class="selfRef">Table 7</a></caption>
 <thead>
               <tr>
                 <th class="text-left" rowspan="1" colspan="1">Name</th>
@@ -5503,7 +5693,7 @@ the "encoding" member of a Content Reference:<a href="#section-15.6.3-1" class="
               <p id="section-15.6.4-2.6.1">Reference: the specification of the problem type.<a href="#section-15.6.4-2.6.1" class="pilcrow">¶</a></p>
 </li>
           </ul>
-<p id="section-15.6.4-3">The initial contents are the problem types listed in <a href="#tab-mapping" class="auto internal xref">Table 1</a>,
+<p id="section-15.6.4-3">The initial contents are the problem types listed in <a href="#tab-mapping" class="auto internal xref">Table 2</a>,
 each with the reference <a href="#smtp-mapping" class="auto internal xref">Section 9.2</a> of RFC XXXX.<a href="#section-15.6.4-3" class="pilcrow">¶</a></p>
 </section>
 </div>
@@ -5695,6 +5885,18 @@ each with the reference <a href="#smtp-mapping" class="auto internal xref">Secti
 <a href="#section-16.2" class="section-number selfRef">16.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
         </h3>
 <dl class="references">
+<dt id="AWS-SES">[AWS-SES]</dt>
+        <dd>
+<span class="refAuthor">Amazon Web Services</span>, <span class="refTitle">"Amazon Simple Email Service API Reference: SendEmail"</span>, <span>&lt;<a href="https://docs.aws.amazon.com/ses/latest/APIReference-V2/API_SendEmail.html">https://docs.aws.amazon.com/ses/latest/APIReference-V2/API_SendEmail.html</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="HALON">[HALON]</dt>
+        <dd>
+<span class="refAuthor">Halon Security AB</span>, <span class="refTitle">"HTTP submission"</span>, <span>&lt;<a href="https://docs.halon.io/manual/http_submission.html">https://docs.halon.io/manual/http_submission.html</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="OCI-EMAIL">[OCI-EMAIL]</dt>
+        <dd>
+<span class="refAuthor">Oracle</span>, <span class="refTitle">"Email Delivery"</span>, <span>&lt;<a href="https://docs.oracle.com/en-us/iaas/Content/Email/home.htm">https://docs.oracle.com/en-us/iaas/Content/Email/home.htm</a>&gt;</span>. </dd>
+<dd class="break"></dd>
 <dt id="RFC2034">[RFC2034]</dt>
         <dd>
 <span class="refAuthor">Freed, N.</span>, <span class="refTitle">"SMTP Service Extension for Returning Enhanced Error Codes"</span>, <span class="seriesInfo">RFC 2034</span>, <span class="seriesInfo">DOI 10.17487/RFC2034</span>, <time datetime="1996-10" class="refDate">October 1996</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc2034">https://www.rfc-editor.org/rfc/rfc2034</a>&gt;</span>. </dd>
