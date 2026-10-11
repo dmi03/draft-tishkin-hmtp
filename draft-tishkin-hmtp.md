@@ -89,6 +89,24 @@ informative:
   RFC9051:
   RFC9114:
   RFC9580:
+  HALON:
+    title: "HTTP submission"
+    target: https://docs.halon.io/manual/http_submission.html
+    author:
+      org: Halon Security AB
+    date: false
+  AWS-SES:
+    title: "Amazon Simple Email Service API Reference: SendEmail"
+    target: https://docs.aws.amazon.com/ses/latest/APIReference-V2/API_SendEmail.html
+    author:
+      org: Amazon Web Services
+    date: false
+  OCI-EMAIL:
+    title: "Email Delivery"
+    target: https://docs.oracle.com/en-us/iaas/Content/Email/home.htm
+    author:
+      org: Oracle
+    date: false
 
 
 --- abstract
@@ -241,6 +259,22 @@ provides HTTP-based access to mailboxes and supports message
 submission, but it does not define transfer of messages between
 mail servers.  HMTP is complementary: a JMAP server can use HMTP to
 deliver submitted messages to other domains.
+
+Some mail transfer agents provide HTTP APIs for injecting messages.
+For example, the Halon MTA accepts a multipart HTTP request that
+carries a JSON object with the envelope sender and recipients
+together with the message in Internet Message Format, authenticated
+with an API key {{HALON}}.  Sending services such as Amazon Simple
+Email Service {{AWS-SES}} and Oracle Cloud Infrastructure Email
+Delivery {{OCI-EMAIL}} likewise offer proprietary HTTP APIs for
+submitting messages.  Each of these APIs is specific to one product
+or service and covers only submission to it, while delivery to other
+domains continues to use SMTP.  Because each service defines its own
+API, an application that integrates with one of them cannot switch to another without being modified.  HMTP follows a similar model, an
+envelope that accompanies an unmodified message, and standardizes it
+for both submission and transfer between independent domains,
+together with discovery, domain-based authentication, and a common
+error model.
 
 HMTP does not replace DKIM.  DKIM signatures inside the message
 continue to protect the message across all hops, including hops that
