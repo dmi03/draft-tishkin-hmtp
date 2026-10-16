@@ -122,10 +122,9 @@ notifications, and adds what SMTP provides only through optional
 extensions or not at all.  Security is built in: transport encryption is
 mandatory, and every transfer request is signed on behalf of the sending
 domain, using keys published with the DomainKeys Identified Mail (DKIM)
-key publication mechanism, so that receivers can identify senders
-independently of their IP addresses.  Requests carry identifiers that
-make retries safe, failures are reported per recipient as structured
-problem details with a mapping to SMTP status codes, and extensions are
+key publication mechanism.  Requests carry identifiers that make retries
+safe, failures are reported per recipient as structured problem details
+with a mapping to SMTP status codes, and extensions are
 declared explicitly as capabilities.  Messages are carried unmodified
 inside a JSON envelope, and large messages and attachments can be
 transferred by reference, with their integrity protected by
@@ -169,15 +168,6 @@ transfer of large content by reference.
 
 This document is motivated by the following properties of SMTP-based
 mail transfer:
-
-Dependence on IP addresses and port 25:
-: Receivers commonly make trust decisions based on the IP address of
-  the connecting server.  Many cloud and hosting providers restrict
-  outbound connections to port 25, and new senders find it difficult
-  to establish reputation for their addresses.  IP-based reputation
-  also works poorly when many unrelated senders share addresses in
-  cloud environments.  As a result, small operators often have to
-  relay mail through third-party sending services.
 
 Optional transport security:
 : STARTTLS is negotiated in plaintext and can be removed by an active
@@ -241,9 +231,7 @@ properties are:
 - Senders are identified by domain.  Each request is signed using
   HTTP Message Signatures {{RFC9421}} together with Digest Fields
   {{RFC9530}}, with keys published in DNS in the same way as DKIM
-  keys.  This allows receivers to base trust decisions on domain
-  reputation rather than on IP address reputation, and allows
-  senders to operate behind proxies and content delivery networks.
+  keys.
 
 - Content may be transferred by reference.  A message, or any part of it
   such as an attachment, may be provided as a URL together with its size
@@ -2428,11 +2416,6 @@ Provider domain:
   that domain.  The reputation of the Sending Domain then accrues to
   the provider rather than to its customer.
 
-Because signatures are not bound to IP addresses, a Sending Server
-can send requests through any network path, including forward
-proxies and HTTP intermediaries, provided that the covered components
-and the content of the request are not modified on the way.
-
 # Delivery Status and Errors
 
 HMTP reports failures in two ways: synchronously, through problem
@@ -3349,12 +3332,6 @@ Downgrade policy:
   reliable, because a policy with the mode "enforce" prevents
   delivery over SMTP for its duration.
 
-Reputation:
-: Receiving Servers base reputation on the Sending Domain instead of
-  IP addresses.  New Sending Domains still need to establish
-  reputation, and Receiving Servers MAY apply rate limits to Sending
-  Domains without history.
-
 Infrastructure:
 : HMTP uses standard HTTP infrastructure, including load balancers,
   reverse proxies, and HTTP libraries.  Operators need to ensure that
@@ -3482,9 +3459,6 @@ and Messages with many segments or recipients.  Servers SHOULD
 advertise and enforce limits ({{capabilities-document}}), SHOULD
 apply rate limits per Sending Domain and per IP address, and MAY
 verify the signature before receiving the content of the request.
-Because the identity of the sender is established by the signature,
-rate limits and blocking can be applied per Sending Domain rather
-than per IP address.
 
 ## Client Authentication {#security-client-authentication}
 

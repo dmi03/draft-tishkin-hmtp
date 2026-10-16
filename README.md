@@ -29,7 +29,7 @@ version submitted to the IETF.
   S/MIME remain valid.
 - **Domain-based authentication.** Every transfer request is signed with HTTP
   Message Signatures (RFC 9421), using keys published in DNS in the same way as
-  DKIM keys. Receivers identify senders by domain rather than by IP address.
+  DKIM keys.
 - **Content by reference.** Large messages and attachments can be provided as
   URLs with their size and hash and are retrieved by the receiving server, so
   that they do not have to be carried in every request.
