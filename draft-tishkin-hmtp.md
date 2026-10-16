@@ -435,9 +435,9 @@ Envelope Recipient:
   Envelope.  It corresponds to an SMTP "RCPT TO" address {{RFC5321}}.
 
 Sending Domain:
-: The domain on whose behalf an HMTP transfer request is signed,
-  as identified by the key used to sign the request (see
-  {{signing}}).
+: The domain on whose behalf an HMTP transfer request is signed, as
+  given in the "domain" parameter of the signature and established by
+  verifying the signature (see {{signing}}).
 
 Client:
 : A Mail User Agent (MUA), or another program acting on behalf of a
@@ -1692,7 +1692,7 @@ Content-Type: application/json
 Content-Digest: sha-256=:Cw2CRUGnwBRSPpU7qzJnP6Fk2zBdJ8u8mXh7sQe1zYI=:
 Signature-Input: hmtp=("@method" "@target-uri" "content-type" \
   "content-digest");created=1767268800;expires=1767269100;\
-  keyid="hmtp2026._domainkey.example.com";alg="ed25519";tag="hmtp"
+  keyid="hmtp2026";domain="example.com";alg="ed25519";tag="hmtp"
 Signature: hmtp=:3iXk1Lw3P1pZq9xH0M2eR8vUe6bJ4yD7nT5aC0fK2gS9\
   hV1mQ4wL8oE6rB3tY7uI0pA5sD2fG9hJ1kL3zX8cVQ==:
 
@@ -2176,7 +2176,9 @@ policy decisions.
 ## Signing Keys {#signing-keys}
 
 A signing key is identified by a selector and a domain, as in DKIM
-({{Section 3.1 of RFC6376}}).  The public key is published as a DKIM
+({{Section 3.1 of RFC6376}}).  In a signature, the selector is carried
+in the "keyid" parameter and the domain in the "domain" parameter
+({{signature-construction}}).  The public key is published as a DKIM
 key record ({{Section 3.6.1 of RFC6376}}) in a TXT record at the
 following name:
 
@@ -2233,17 +2235,26 @@ The Sending Server creates a signature as specified in
   {{transfer-request}}.
 
 - The signature parameters ({{Section 2.3 of RFC9421}}) MUST include
-  "created", "expires", "keyid", "alg", and "tag":
+  "created", "expires", "keyid", "domain", "alg", and "tag":
 
   - "created" is the time at which the signature was created.
   - "expires" MUST NOT be more than 300 seconds after "created".
-  - "keyid" is the DNS name of the key record, in the form
-    `<selector>._domainkey.<domain>`, where the domain is in A-label
-    form, without a trailing dot.  The domain in this name is the
-    Sending Domain.
+  - "keyid" is the selector of the key, with the syntax defined in
+    {{RFC6376}}, for example "hmtp2026".
+  - "domain" is the Sending Domain, that is, the domain under which
+    the key record is published, in A-label form, without a trailing
+    dot, for example "example.com".  This parameter is defined in
+    {{iana-signature-params}}.  If the Envelope Sender is not empty,
+    the Sending Domain MUST be aligned with it as described in
+    {{alignment}}.
   - "alg" is the signature algorithm that corresponds to the key type
     of the key record.
   - "tag" is the string "hmtp".
+
+  The key record is located at the name formed from these two
+  parameters as `<keyid>._domainkey.<domain>`.  Because both
+  parameters are covered by the signature, they cannot be changed
+  without invalidating it.
 
 - The signature label is not significant; "hmtp" is RECOMMENDED.
 
@@ -2261,12 +2272,13 @@ NOTE: '\' line wrapping per RFC 8792
 Content-Digest: sha-256=:Cw2CRUGnwBRSPpU7qzJnP6Fk2zBdJ8u8mXh7sQe1zYI=:
 Signature-Input: hmtp=("@method" "@target-uri" "content-type" \
   "content-digest");created=1767268800;expires=1767269100;\
-  keyid="hmtp2026._domainkey.example.com";alg="ed25519";tag="hmtp"
+  keyid="hmtp2026";domain="example.com";alg="ed25519";tag="hmtp"
 Signature: hmtp=:3iXk1Lw3P1pZq9xH0M2eR8vUe6bJ4yD7nT5aC0fK2gS9\
   hV1mQ4wL8oE6rB3tY7uI0pA5sD2fG9hJ1kL3zX8cVQ==:
 ~~~
 
-The corresponding key record is:
+The corresponding key record, located at
+`hmtp2026._domainkey.example.com`, is:
 
 ~~~ dns
 hmtp2026._domainkey.example.com. 3600 IN TXT (
@@ -2308,18 +2320,17 @@ rejected with the "signature-invalid" problem type.
    received, allowing for a clock skew of no more than 60 seconds,
    and that "expires" is not more than 300 seconds after "created".
 
-4. It verifies that "keyid" has the form
-   `<selector>._domainkey.<domain>`, where the selector has the syntax
-   defined in {{RFC6376}}.  Because a selector cannot contain the label
-   "_domainkey", the Sending Domain is the part of the name that
-   follows the first "_domainkey" label.
+4. It verifies that "keyid" is a selector with the syntax defined in
+   {{RFC6376}} and that "domain" is a domain name in A-label form.
+   The value of "domain" is the Sending Domain.
 
-5. It queries DNS for TXT records at the name given in "keyid".  If
-   the query fails temporarily, it rejects the request with the
-   "key-unavailable" problem type, which is a temporary failure.  If
-   the name does not exist, or if the response does not contain
-   exactly one valid key record, verification fails.  DNS responses
-   SHOULD be validated using DNSSEC {{RFC4033}} when available.
+5. It queries DNS for TXT records at the name
+   `<keyid>._domainkey.<domain>`.  If the query fails temporarily, it
+   rejects the request with the "key-unavailable" problem type, which
+   is a temporary failure.  If the name does not exist, or if the
+   response does not contain exactly one valid key record,
+   verification fails.  DNS responses SHOULD be validated using DNSSEC
+   {{RFC4033}} when available.
 
 6. It verifies that the key record meets the requirements of
    {{signing-keys}} and that its key type corresponds to "alg".
@@ -2389,10 +2400,9 @@ Delegation of a selector:
       example-com.keys.esp.example. )
   ~~~
 
-  The provider signs with "keyid" set to
-  "esp1._domainkey.example.com"; the Sending Domain is "example.com".
-  The domain can revoke the authorization at any time by removing the
-  CNAME record.
+  The provider signs with "keyid" set to "esp1" and "domain" set to
+  "example.com", which is the Sending Domain.  The domain can revoke
+  the authorization at any time by removing the CNAME record.
 
 Publication of a provider key:
 : The domain publishes, under a selector of its own, a public key
@@ -3317,6 +3327,22 @@ Types" registry {{RFC6376}}:
 |---|---|---|
 | hmtp | RFC XXXX | active |
 
+## HTTP Signature Metadata Parameter {#iana-signature-params}
+
+IANA is requested to add the following entry to the "HTTP Signature
+Metadata Parameters" registry {{RFC9421}}:
+
+Name:
+: domain
+
+Description:
+: The domain name under which the key identified by the "keyid"
+  parameter is published, as a DKIM key record, at the name
+  `<keyid>._domainkey.<domain>`.
+
+Reference:
+: {{signature-construction}} of RFC XXXX
+
 ## Mail Transmission Types {#iana-transmission-types}
 
 IANA is requested to add the following entries to the "Mail
@@ -3488,7 +3514,7 @@ Content-Type: application/json
 Content-Digest: sha-256=:q1M8rT4vYw7Zb2Nd5Kf0Hs9Lx3Jc6Pg1Ue8Ra4Wi2Oo=:
 Signature-Input: hmtp=("@method" "@target-uri" "content-type" \
   "content-digest");created=1767268800;expires=1767269100;\
-  keyid="hmtp2026._domainkey.example.com";alg="ed25519";tag="hmtp"
+  keyid="hmtp2026";domain="example.com";alg="ed25519";tag="hmtp"
 Signature: hmtp=:Zm9vYmFyZXhhbXBsZXNpZ25hdHVyZXZhbHVlbm90cmVh\
   bGx5dmFsaWRqdXN0aWxsdXN0cmF0aXZlb25seWZvcg==:
 
