@@ -4,8 +4,8 @@
 
 Network Working Group                                         D. Tishkin
 Internet-Draft                                               Independent
-Intended status: Standards Track                         11 October 2026
-Expires: 14 April 2027
+Intended status: Standards Track                         16 October 2026
+Expires: 19 April 2027
 
 
                       HTTP Mail Transfer Protocol
@@ -61,7 +61,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 14 April 2027.
+   This Internet-Draft will expire on 19 April 2027.
 
 Copyright Notice
 
@@ -92,10 +92,11 @@ Table of Contents
      3.3.  Coexistence with SMTP
    4.  Discovery
      4.1.  DNS Record
-     4.2.  Capabilities Document
-       4.2.1.  Endpoint Objects
-       4.2.2.  Retrieval and Caching
-       4.2.3.  Example
+     4.2.  Selection of the Target Host
+     4.3.  Capabilities Document
+       4.3.1.  Endpoint Objects
+       4.3.2.  Retrieval and Caching
+       4.3.3.  Example
    5.  Data Model
      5.1.  Envelope
      5.2.  Content Object
@@ -129,6 +130,12 @@ Table of Contents
      9.2.  Mapping to SMTP Status Codes
      9.3.  Delivery Status Notifications
        9.3.1.  Example
+     9.4.  Delivery Status Reports
+       9.4.1.  Sending Reports
+       9.4.2.  Report Object
+       9.4.3.  Processing Reports
+       9.4.4.  Mapping to DSN Fields
+       9.4.5.  Example
    10. SMTP Fallback and Interoperability
      10.1.  When to Fall Back
        10.1.1.  Example
@@ -145,19 +152,21 @@ Table of Contents
      13.6.  Content References
      13.7.  Denial of Service
      13.8.  Client Authentication
-     13.9.  Transfer Identifiers
+     13.9.  Delivery Status Reports
+     13.10. Transfer Identifiers
    14. Privacy Considerations
    15. IANA Considerations
      15.1.  Underscored and Globally Scoped DNS Node Name
      15.2.  Well-Known URI
      15.3.  DKIM Service Type
-     15.4.  Mail Transmission Types
-     15.5.  URN Sub-namespace
-     15.6.  HMTP Registry Group
-       15.6.1.  HMTP Capabilities
-       15.6.2.  HMTP Endpoints
-       15.6.3.  HMTP Content Encodings
-       15.6.4.  HMTP Problem Types
+     15.4.  HTTP Signature Metadata Parameter
+     15.5.  Mail Transmission Types
+     15.6.  URN Sub-namespace
+     15.7.  HMTP Registry Group
+       15.7.1.  HMTP Capabilities
+       15.7.2.  HMTP Endpoints
+       15.7.3.  HMTP Content Encodings
+       15.7.4.  HMTP Problem Types
    16. References
      16.1.  Normative References
      16.2.  Informative References
@@ -166,6 +175,7 @@ Table of Contents
      A.2.  Transfer with Referenced Content
      A.3.  Submission
      A.4.  Retried Request
+     A.5.  Delivery Status Report
    Author's Address
 
 1.  Introduction
@@ -291,20 +301,24 @@ Table of Contents
    *  Errors are structured.  Failures are reported using Problem
       Details for HTTP APIs [RFC9457], with a defined mapping to SMTP
       enhanced status codes.  The result is reported separately for each
-      recipient.
+      recipient.  Delivery status notifications can optionally be sent
+      as JSON reports to the domain of the sender instead of as DSN
+      messages.
 
    *  The protocol is extensible.  Servers advertise optional
       extensions, called capabilities, in the Capabilities Document, and
       requests indicate the capabilities they use, so that new
       functionality can be added without changing the base protocol.
 
-   *  Deployment is incremental.  HMTP is a complete protocol on its own
-      and does not depend on SMTP.  An implementation can optionally
-      deliver messages using SMTP when a receiving domain does not
-      publish an HMTP endpoint.  Because the message is carried
-      unmodified, such a fallback requires no conversion of the message,
-      provided that the SMTP server supports the SMTP extensions that
-      the message requires.
+   *  HMTP coexists with SMTP.  HMTP is a complete protocol on its own
+      and does not depend on SMTP, but the two can be combined freely:
+      the protocol is chosen separately for each hop, so a server can
+      receive a message with one protocol and forward it with the other.
+      An implementation can also deliver messages using SMTP when a
+      receiving domain does not publish an HMTP endpoint.  Because the
+      message is carried unmodified, no conversion is needed, provided
+      that the SMTP server supports the SMTP extensions that the message
+      requires.
 
    HMTP defines two roles: submission, in which a client hands a message
    to its mail service, and transfer, in which one mail server delivers
@@ -363,12 +377,15 @@ Table of Contents
       +-----------------------------+-------------------------------+
       | Received field "with ESMTP" | Received field "with HMTP"    |
       +-----------------------------+-------------------------------+
+      | DSN messages                | DSN messages or delivery      |
+      |                             | status reports                |
+      +-----------------------------+-------------------------------+
 
            Table 1: SMTP Concepts and Their Counterparts in HMTP
 
-   The counterparts are specified in Section 4.1, Section 4.2,
+   The counterparts are specified in Section 4.1, Section 4.3,
    Section 5.4, Section 8, Section 7.1, Section 5.1, Section 5.2,
-   Section 9.1, Section 6.3, and Section 6.5.
+   Section 9.1, Section 6.3, Section 6.5, and Section 9.4.
 
    The following parts of the mail system are the same for both
    protocols: the Internet Message Format, DKIM and DMARC evaluation of
@@ -488,8 +505,8 @@ Table of Contents
       "RCPT TO" address [RFC5321].
 
    Sending Domain:  The domain on whose behalf an HMTP transfer request
-      is signed, as identified by the key used to sign the request (see
-      Section 8).
+      is signed, as given in the "domain" parameter of the signature and
+      established by verifying the signature (see Section 8).
 
    Client:  A Mail User Agent (MUA), or another program acting on behalf
       of a user, that submits Messages to a Submission Server using
@@ -512,7 +529,7 @@ Table of Contents
 
    Capabilities Document:  The JSON document that describes the HMTP
       Endpoints, limits, policy, and extensions of a host (see
-      Section 4.2).
+      Section 4.3).
 
    Content Object:  A JSON object that carries content, such as a
       Message, either inline, by reference, or as a sequence of segments
@@ -603,12 +620,74 @@ Table of Contents
 
 3.3.  Coexistence with SMTP
 
-   HMTP does not change the use of MX records [RFC5321] or the operation
-   of existing SMTP servers.  A domain can publish an HMTP Endpoint in
-   addition to its MX records, and a server can support both protocols
-   at the same time.  Because the Message is carried unmodified, a
-   Message can travel over a path that combines HMTP and SMTP hops
-   without conversion.
+   HMTP is designed to coexist with SMTP permanently, not only during a
+   transition period.  HMTP does not change the use of MX records
+   [RFC5321] or the operation of existing SMTP servers.  A domain can
+   publish an HMTP Endpoint in addition to its MX records, and a server
+   can support both protocols at the same time.
+
+   The protocol is chosen separately for each hop.  A server that
+   supports both protocols decides how to forward a Message
+   independently of the protocol over which it received the Message, so
+   that all four combinations shown in Figure 2 are possible:
+
+      incoming hop                                     outgoing hop
+
+     (1) --- HMTP --->  +------------------------+  --- HMTP --->
+     (2) --- HMTP --->  |  Server that supports  |  --- SMTP --->
+     (3) --- SMTP --->  |  both HMTP and SMTP    |  --- HMTP --->
+     (4) --- SMTP --->  |                        |  --- SMTP --->
+                        +------------------------+
+
+            Figure 2: Combinations of Incoming and Outgoing Hops
+
+   HMTP to HMTP:  A server relays a Message that it received over HMTP
+      to another HMTP Endpoint, for example a Submission Server that
+      delivers to a domain that publishes an HMTP Endpoint.
+
+   HMTP to SMTP:  A server accepts a Message over HMTP and forwards it
+      over SMTP.  Examples are a Submission Server that sends all
+      outbound Messages through an SMTP relay of its operator, a
+      Receiving Server that passes accepted Messages to an existing
+      SMTP-based mail system of the recipient domain, and a Sending
+      Server that falls back to SMTP for a domain that does not support
+      HMTP (Section 10).
+
+   SMTP to HMTP:  A server accepts a Message over SMTP and forwards it
+      over HMTP.  Examples are an existing MX server that relays
+      Messages to an HMTP-based mailbox service of the same domain, and
+      an SMTP server that delivers outbound Messages to domains that
+      publish an HMTP Endpoint, as described in Section 10.3.
+
+   SMTP to SMTP:  The operation of SMTP is not affected by HMTP.
+
+   In every combination, the Message is forwarded unchanged, except for
+   the trace header fields that each server prepends (Section 6.5), and
+   the Envelope information is carried over between the parameters of
+   SMTP commands and the members of the Envelope as described in
+   Section 10.1 and Section 10.3.  DKIM signatures and end-to-end
+   protection of the Message therefore remain valid on any path.
+
+   How the protocol for an outgoing hop is chosen depends on how the
+   next hop is determined:
+
+   *  If the next hop is determined by discovery for the domain of an
+      Envelope Recipient, HMTP is used if the domain supports it.  SMTP
+      is used only under the conditions of Section 10.1, which include
+      the downgrade policy of the domain.
+
+   *  If the next hop is determined by local configuration, for example
+      a relay of the operator of the server, the internal mail system of
+      the recipient domain, or a filtering or backup service under an
+      agreement with the recipient domain, the server uses the protocol
+      configured for that next hop.  This is not a fallback in the sense
+      of Section 10.  The rules of Section 10.1 apply to the server that
+      eventually delivers the Message to the recipient domain.
+
+   As a result, a domain can, for example, receive mail over HMTP while
+   its outbound mail continues to use SMTP, or send mail over HMTP while
+   it continues to receive mail over SMTP, without any dependency
+   between the two directions.
 
    Support for SMTP is not required for an HMTP implementation.  A
    server that implements only HMTP is fully conformant to this
@@ -620,7 +699,7 @@ Table of Contents
    A server or Client locates the HMTP Endpoint of a domain in two
    steps.  It first queries DNS for the HMTP service record of the
    domain (Section 4.1) and then retrieves the Capabilities Document
-   from the target host (Section 4.2).
+   from the target host (Section 4.3).
 
 4.1.  DNS Record
 
@@ -665,8 +744,8 @@ Table of Contents
       record that lists an unsupported key in the "mandatory" SvcParam
       is unusable, as specified in [RFC9460].
 
-   *  If multiple ServiceMode records are present, they are tried in
-      order of priority as specified in [RFC9460].
+   *  If multiple ServiceMode records are present, the host to connect
+      to is selected as described in Section 4.2.
 
    A Sending Server uses the domain of each Envelope Recipient to locate
    the Receiving Server.  A Client uses the domain of its own address to
@@ -697,7 +776,90 @@ Table of Contents
 
    Results of DNS queries MAY be cached for the duration of their TTL.
 
-4.2.  Capabilities Document
+4.2.  Selection of the Target Host
+
+   A domain can publish several ServiceMode records, for example to
+   provide redundant hosts or a backup host.  The server or Client
+   selects among them in the same way as an SMTP client selects among MX
+   records (Section 5.1 of [RFC5321]):
+
+   1.  It discards the records that are unusable as described in
+       Section 4.1.
+
+   2.  It orders the remaining records by their SvcPriority, from the
+       lowest value to the highest.  A lower value indicates a more
+       preferred host.
+
+   3.  It orders records with the same SvcPriority randomly, so that
+       each of them is equally likely to be tried first, as recommended
+       in Section 2.4.1 of [RFC9460].  SVCB records have no weight, so
+       the load is distributed evenly among hosts of equal priority.
+
+   4.  It tries the hosts in the resulting order.  A host with a higher
+       SvcPriority value is tried only after all hosts with lower values
+       have failed.
+
+   5.  If the attempt fails at every host, the delivery attempt has
+       failed temporarily.  The server retries later as described in
+       Section 6.4, starting again with step 1, so that a new random
+       order is used.
+
+   If the TargetName of a host resolves to several IP addresses, the
+   server or Client tries these addresses before it proceeds to the next
+   host, for example using the Happy Eyeballs algorithm [RFC8305].
+
+   The server or Client proceeds to the next host if the attempt at the
+   current host fails in one of the following ways:
+
+   *  The TargetName cannot be resolved, or no connection can be
+      established to any of its addresses.
+
+   *  The TLS handshake fails, including a failure to validate the
+      certificate of the host.
+
+   *  The Capabilities Document cannot be retrieved because of a
+      temporary failure, or the host is not usable according to
+      Section 4.3.
+
+   *  No response is received, for example because the connection is
+      lost or a timeout expires.
+
+   *  The response has the status code 500, 502, 503, or 504.
+
+   Any other response ends the attempt, and the server or Client does
+   not try further hosts:
+
+   *  A response with the status code 200 (OK) or 202 (Accepted)
+      completes the attempt.  Envelope Recipients with the result
+      "deferred" are retried later as described in Section 6.4.
+
+   *  Any other response is handled as described in Section 6.4,
+      according to the class of the "smtpStatus" member: a temporary
+      failure, such as "rate-limited", is retried later, because such
+      conditions usually apply to the domain as a whole, and a permanent
+      failure is not retried.
+
+   A retry at the next host after a lost response is a retry in the
+   sense of Section 6.4: the sender sends the identical request with the
+   same Transfer Identifier.  To ensure that such a retry does not cause
+   duplicate delivery, a domain that publishes several hosts SHOULD
+   ensure that the stored Transfer Identifiers are shared among them.
+
+   A server MAY reuse an established connection to a host for further
+   requests for the same domain while the SVCB records that led to the
+   host remain valid.
+
+   In the following example, the hosts "hmtp1.example.net" and
+   "hmtp2.example.net" share the lowest priority.  Each of them is tried
+   first with equal probability, and the other one is tried if the first
+   fails.  The host "backup.provider.example" is tried only if both
+   fail:
+
+   _hmtp.example.net.  3600 IN SVCB 10 hmtp1.example.net. alpn=h2,h3
+   _hmtp.example.net.  3600 IN SVCB 10 hmtp2.example.net. alpn=h2,h3
+   _hmtp.example.net.  3600 IN SVCB 20 backup.provider.example. alpn=h2
+
+4.3.  Capabilities Document
 
    The Capabilities Document describes the HMTP Endpoint of a host.  It
    is retrieved with an HTTP GET request to the well-known URI [RFC8615]
@@ -722,11 +884,12 @@ Table of Contents
 
       endpoints:  REQUIRED.  A JSON object whose member names identify
          the interactions supported in this version and whose values are
-         Endpoint Objects (Section 4.2.1).  This document defines the
+         Endpoint Objects (Section 4.3.1).  This document defines the
          following members:
 
          *  "transfer": the Transfer Endpoint Object, which describes
-            the endpoint for transfer (Section 6);
+            the endpoint for transfer (Section 6) and the related
+            OPTIONAL endpoint for delivery status reports (Section 9.4);
 
          *  "submission": the Submission Endpoint Object, which
             describes the endpoint for submission (Section 7) and the
@@ -735,7 +898,7 @@ Table of Contents
          At least one of "transfer" and "submission" MUST be present.
          Additional endpoints MAY be defined by capabilities
          (Section 5.4) and are registered as described in
-         Section 15.6.2.
+         Section 15.7.2.
 
    limits:  OPTIONAL.  A JSON object describing limits of the server.
       All values are non-negative integers.  This document defines the
@@ -775,7 +938,7 @@ Table of Contents
    Recipients of the Capabilities Document MUST ignore members they do
    not understand.
 
-4.2.1.  Endpoint Objects
+4.3.1.  Endpoint Objects
 
    An Endpoint Object is a JSON object that describes one endpoint and
    the parameters that apply to it.  Every Endpoint Object contains the
@@ -791,9 +954,17 @@ Table of Contents
    an endpoint without changing the structure of the Capabilities
    Document.
 
-   The Transfer Endpoint Object has no members other than "uri" in this
-   document.  Transfer requests are authenticated by signatures
-   (Section 8), so no authentication parameters apply to it.
+   The Transfer Endpoint Object contains the following member in
+   addition to "uri":
+
+   reports:  OPTIONAL.  The URI of the endpoint for delivery status
+      reports (Section 9.4), subject to the same rules as "uri".  If
+      this member is absent, the domains served by the host do not
+      accept reports, and DSN messages are sent to them instead.
+
+   Transfer requests and reports are authenticated by signatures
+   (Section 8), so no authentication parameters apply to the Transfer
+   Endpoint Object.
 
    The Submission Endpoint Object contains the following members in
    addition to "uri":
@@ -813,7 +984,7 @@ Table of Contents
       the metadata as specified in [RFC9728].  The resource identifier
       of a Submission Server is the origin of its submission endpoint.
 
-4.2.2.  Retrieval and Caching
+4.3.2.  Retrieval and Caching
 
    Servers SHOULD include caching information in the response, and
    recipients MAY cache the document as specified in [RFC9111].
@@ -833,7 +1004,7 @@ Table of Contents
       If no usable host remains, the domain is treated as not supporting
       HMTP.
 
-4.2.3.  Example
+4.3.3.  Example
 
    The following example shows the DNS record and the Capabilities
    Document of a domain whose mail is handled by a provider:
@@ -850,7 +1021,8 @@ Table of Contents
        "1": {
          "endpoints": {
            "transfer": {
-             "uri": "/hmtp/v1/transfer"
+             "uri": "/hmtp/v1/transfer",
+             "reports": "/hmtp/v1/reports"
            },
            "submission": {
              "uri": "/hmtp/v1/submission",
@@ -911,7 +1083,7 @@ Table of Contents
       of the base64url alphabet (Section 5 of [RFC4648]): "A" to "Z",
       "a" to "z", "0" to "9", "-", and "_".  Its length MUST NOT exceed
       the "maxIdLength" limit of the recipient of the request (see
-      Section 4.2).  The sender SHOULD include at least 128 bits of
+      Section 4.3).  The sender SHOULD include at least 128 bits of
       randomness, for example 16 random octets encoded in base64url
       without padding, which yields 22 characters.  A request whose
       Transfer Identifier does not meet these requirements is rejected
@@ -1093,7 +1265,7 @@ Table of Contents
    contains no supported algorithm, the request is rejected with the
    "invalid-request" problem type.
 
-   The "maxMessageSize" limit (Section 4.2) applies to the size of the
+   The "maxMessageSize" limit (Section 4.3) applies to the size of the
    reconstructed Message.  Because the size of every segment is known
    before any content is retrieved, the recipient of a request can
    determine whether the limit is exceeded without retrieving any
@@ -1236,7 +1408,7 @@ Table of Contents
    / 3) characters plus 2 octets for each line separator.
 
    Additional encodings can be registered as described in
-   Section 15.6.3.  A sender MUST NOT use an encoding other than
+   Section 15.7.3.  A sender MUST NOT use an encoding other than
    "base64" unless the recipient of the request advertises support for
    it through a capability.
 
@@ -1297,7 +1469,7 @@ Table of Contents
       lowercase ASCII letters, digits, and hyphens, starts with a
       letter, and does not end with a hyphen, for example "future-
       release".  A registered name MUST be registered in the "HMTP
-      Capabilities" registry (Section 15.6.1) before it is used, which
+      Capabilities" registry (Section 15.7.1) before it is used, which
       requires a publicly available specification (see Section 15).
       Implementations MUST NOT use a name of this form that is not
       registered.  Registered names are intended for capabilities that
@@ -1365,7 +1537,7 @@ Table of Contents
       members defined by the capability for that object.
 
    *  A capability with a registered name that defines a new endpoint
-      registers the endpoint name (Section 15.6.2) and is advertised
+      registers the endpoint name (Section 15.7.2) and is advertised
       with an Endpoint Object in the "endpoints" member of a Version
       Object.  A capability identified by a URI advertises the URIs of
       its endpoints in its own parameters instead.
@@ -1543,7 +1715,7 @@ Table of Contents
    Content-Digest: sha-256=:Cw2CRUGnwBRSPpU7qzJnP6Fk2zBdJ8u8mXh7sQe1zYI=:
    Signature-Input: hmtp=("@method" "@target-uri" "content-type" \
      "content-digest");created=1767268800;expires=1767269100;\
-     keyid="hmtp2026._domainkey.example.com";alg="ed25519";tag="hmtp"
+     keyid="hmtp2026";domain="example.com";alg="ed25519";tag="hmtp"
    Signature: hmtp=:3iXk1Lw3P1pZq9xH0M2eR8vUe6bJ4yD7nT5aC0fK2gS9\
      hV1mQ4wL8oE6rB3tY7uI0pA5sD2fG9hJ1kL3zX8cVQ==:
 
@@ -1798,7 +1970,7 @@ Table of Contents
    *  The "by" clause contains the host name of the server.
 
    *  The "with" clause contains "HMTP" for a transfer request and
-      "HMTPA" for a submission request (see Section 15.4).
+      "HMTPA" for a submission request (see Section 15.5).
 
    *  The "id" clause, if present, contains the "queueId" of the
       response.
@@ -1859,7 +2031,7 @@ Table of Contents
 7.1.  Client Authentication
 
    The "authentication" member of the Submission Endpoint Object
-   (Section 4.2.1) lists the HTTP authentication schemes [RFC9110]
+   (Section 4.3.1) lists the HTTP authentication schemes [RFC9110]
    accepted by the Submission Server for the submission and identities
    endpoints, using the scheme names from the "HTTP Authentication
    Scheme Registry".  Scheme names are compared without regard to case.
@@ -1958,7 +2130,7 @@ Table of Contents
    The identities endpoint returns the identities that the authenticated
    Client is authorized to use as originator addresses.  Its URI is
    given by the "identities" member of the Submission Endpoint Object
-   (Section 4.2.1).  A Client sends an HTTP GET request to the endpoint,
+   (Section 4.3.1).  A Client sends an HTTP GET request to the endpoint,
    authenticated as described in Section 7.1.  The server responds with
    the status code 200 (OK) and a JSON object with the media type
    "application/json" and the following member:
@@ -2009,9 +2181,10 @@ Table of Contents
 8.1.  Signing Keys
 
    A signing key is identified by a selector and a domain, as in DKIM
-   (Section 3.1 of [RFC6376]).  The public key is published as a DKIM
-   key record (Section 3.6.1 of [RFC6376]) in a TXT record at the
-   following name:
+   (Section 3.1 of [RFC6376]).  In a signature, the selector is carried
+   in the "keyid" parameter and the domain in the "domain" parameter
+   (Section 8.2).  The public key is published as a DKIM key record
+   (Section 3.6.1 of [RFC6376]) in a TXT record at the following name:
 
    <selector>._domainkey.<domain>
 
@@ -2063,21 +2236,31 @@ Table of Contents
       field MUST be present in the request, as required in Section 6.1.
 
    *  The signature parameters (Section 2.3 of [RFC9421]) MUST include
-      "created", "expires", "keyid", "alg", and "tag":
+      "created", "expires", "keyid", "domain", "alg", and "tag":
 
       -  "created" is the time at which the signature was created.
 
       -  "expires" MUST NOT be more than 300 seconds after "created".
 
-      -  "keyid" is the DNS name of the key record, in the form
-         <selector>._domainkey.<domain>, where the domain is in A-label
-         form, without a trailing dot.  The domain in this name is the
-         Sending Domain.
+      -  "keyid" is the selector of the key, with the syntax defined in
+         [RFC6376], for example "hmtp2026".
+
+      -  "domain" is the Sending Domain, that is, the domain under which
+         the key record is published, in A-label form, without a
+         trailing dot, for example "example.com".  This parameter is
+         defined in Section 15.4.  If the Envelope Sender is not empty,
+         the Sending Domain MUST be aligned with it as described in
+         Section 8.4.
 
       -  "alg" is the signature algorithm that corresponds to the key
          type of the key record.
 
       -  "tag" is the string "hmtp".
+
+      The key record is located at the name formed from these two
+      parameters as <keyid>._domainkey.<domain>.  Because both
+      parameters are covered by the signature, they cannot be changed
+      without invalidating it.
 
    *  The signature label is not significant; "hmtp" is RECOMMENDED.
 
@@ -2094,11 +2277,12 @@ Table of Contents
    Content-Digest: sha-256=:Cw2CRUGnwBRSPpU7qzJnP6Fk2zBdJ8u8mXh7sQe1zYI=:
    Signature-Input: hmtp=("@method" "@target-uri" "content-type" \
      "content-digest");created=1767268800;expires=1767269100;\
-     keyid="hmtp2026._domainkey.example.com";alg="ed25519";tag="hmtp"
+     keyid="hmtp2026";domain="example.com";alg="ed25519";tag="hmtp"
    Signature: hmtp=:3iXk1Lw3P1pZq9xH0M2eR8vUe6bJ4yD7nT5aC0fK2gS9\
      hV1mQ4wL8oE6rB3tY7uI0pA5sD2fG9hJ1kL3zX8cVQ==:
 
-   The corresponding key record is:
+   The corresponding key record, located at
+   hmtp2026._domainkey.example.com, is:
 
    hmtp2026._domainkey.example.com. 3600 IN TXT (
        "v=DKIM1; k=ed25519; s=hmtp; "
@@ -2138,18 +2322,17 @@ Table of Contents
        received, allowing for a clock skew of no more than 60 seconds,
        and that "expires" is not more than 300 seconds after "created".
 
-   4.  It verifies that "keyid" has the form
-       <selector>._domainkey.<domain>, where the selector has the syntax
-       defined in [RFC6376].  Because a selector cannot contain the
-       label "_domainkey", the Sending Domain is the part of the name
-       that follows the first "_domainkey" label.
+   4.  It verifies that "keyid" is a selector with the syntax defined in
+       [RFC6376] and that "domain" is a domain name in A-label form.
+       The value of "domain" is the Sending Domain.
 
-   5.  It queries DNS for TXT records at the name given in "keyid".  If
-       the query fails temporarily, it rejects the request with the
-       "key-unavailable" problem type, which is a temporary failure.  If
-       the name does not exist, or if the response does not contain
-       exactly one valid key record, verification fails.  DNS responses
-       SHOULD be validated using DNSSEC [RFC4033] when available.
+   5.  It queries DNS for TXT records at the name
+       <keyid>._domainkey.<domain>.  If the query fails temporarily, it
+       rejects the request with the "key-unavailable" problem type,
+       which is a temporary failure.  If the name does not exist, or if
+       the response does not contain exactly one valid key record,
+       verification fails.  DNS responses SHOULD be validated using
+       DNSSEC [RFC4033] when available.
 
    6.  It verifies that the key record meets the requirements of
        Section 8.1 and that its key type corresponds to "alg".
@@ -2217,10 +2400,9 @@ Table of Contents
       esp1._domainkey.example.com. 3600 IN CNAME (
           example-com.keys.esp.example. )
 
-      The provider signs with "keyid" set to
-      "esp1._domainkey.example.com"; the Sending Domain is
-      "example.com".  The domain can revoke the authorization at any
-      time by removing the CNAME record.
+      The provider signs with "keyid" set to "esp1" and "domain" set to
+      "example.com", which is the Sending Domain.  The domain can revoke
+      the authorization at any time by removing the CNAME record.
 
    Publication of a provider key:  The domain publishes, under a
       selector of its own, a public key whose private key is held by the
@@ -2253,7 +2435,7 @@ Table of Contents
 
    Problem types defined for HMTP have URIs of the form
    urn:ietf:params:hmtp:error:<name> and are registered as described in
-   Section 15.6.4.  Servers MAY use other problem type URIs as permitted
+   Section 15.7.4.  Servers MAY use other problem type URIs as permitted
    by [RFC9457].
 
    This document defines the following extension members of problem
@@ -2354,7 +2536,7 @@ Table of Contents
     +-------------------------+-----------+-------+----------+-------+
     | invalid-address         | Recipient | -     | 5.1.3    | 553   |
     +-------------------------+-----------+-------+----------+-------+
-    | domain-not-served       | Recipient | -     | 5.1.2    | 550   |
+    | domain-not-served       | Both      | 422   | 5.1.2    | 550   |
     +-------------------------+-----------+-------+----------+-------+
     | mailbox-disabled        | Recipient | -     | 5.2.1    | 550   |
     +-------------------------+-----------+-------+----------+-------+
@@ -2444,7 +2626,8 @@ Table of Contents
 
    domain-not-served:  The server does not accept Messages for the
       domain of the Envelope Recipient and has no agreement to relay
-      them.
+      them, or, for a delivery status report, does not serve the domain
+      of the "envelopeSender" member (Section 9.4.3).
 
    mailbox-disabled:  The recipient mailbox exists but does not accept
       Messages.
@@ -2458,7 +2641,8 @@ Table of Contents
    conversion-required:  Delivery requires a conversion of the Message
       that the server does not perform, for example because an SMTP
       server used for fallback does not support an extension that the
-      Message requires (Section 10.1).
+      Message requires, or because the request uses a must-understand
+      capability that cannot be forwarded over SMTP (Section 10.1).
 
    tls-required:  The Envelope requests REQUIRETLS, and the requirement
       cannot be satisfied on the path to the recipient.  The enhanced
@@ -2488,6 +2672,11 @@ Table of Contents
 
    *  A server that relays a Message passes the DSN parameters on to the
       next hop, whether that hop uses HMTP or SMTP.
+
+   *  If the domain of the Envelope Sender supports delivery status
+      reports, the information is sent as a report instead of a DSN
+      message, as described in Section 9.4.  All HMTP servers MUST
+      continue to accept DSN messages, which are ordinary Messages.
 
    The fields of the DSN are filled in as follows:
 
@@ -2599,25 +2788,282 @@ Table of Contents
      "to": [{"address": "alice@example.com"}]
    }
 
+9.4.  Delivery Status Reports
+
+   DSN messages are designed to be read by people and are difficult to
+   process automatically, because the information has to be extracted
+   from a multipart Message.  When both the reporting server and the
+   domain of the Envelope Sender support HMTP, the same information can
+   instead be sent as a delivery status report: a JSON document that is
+   transferred directly to the "reports" endpoint of that domain.
+
+   Delivery status reports are OPTIONAL.  A server that does not support
+   them sends DSN messages as described in Section 9.3, and every HMTP
+   server MUST continue to accept DSN messages.  A report carries the
+   same information as a DSN message and is subject to the same rules on
+   when it is generated: a report is sent only where [RFC3461] and
+   Section 9.3 call for a DSN.
+
+9.4.1.  Sending Reports
+
+   When a server is about to generate a DSN for a Message whose Envelope
+   Sender is not empty, it performs discovery (Section 4) for the domain
+   of the Envelope Sender.  If the domain supports HMTP and the Transfer
+   Endpoint Object in a version that the server supports contains a
+   "reports" member (Section 4.3.1), the server SHOULD send a report to
+   the URI given in that member instead of generating a DSN message.
+   Otherwise, it generates a DSN message.
+
+   A report is sent with an HTTP POST request to the "reports" endpoint.
+   The request has the same properties as a transfer request
+   (Section 6.1), except that its content is a Report Object
+   (Section 9.4.2):
+
+   *  The Content-Type header field is "application/json", and the
+      request contains a Content-Digest header field.
+
+   *  The request is signed as described in Section 8 on behalf of the
+      domain of the reporting server.  Because a report has no Envelope
+      Sender, the alignment rules of Section 8.4 do not apply, as for a
+      Message with an empty Envelope Sender.
+
+   *  The "id" member of the Report Object is a Transfer Identifier, and
+      retries follow the rules of Section 6.4.
+
+   A report covers one Message and MAY cover several of its Envelope
+   Recipients, in the same way as a single DSN message.  A server MUST
+   NOT combine information about different Messages in one report.
+
+   If the request fails temporarily, the server retries it as described
+   in Section 6.4.  If the request fails permanently, or if the server
+   gives up retrying, it MUST generate a DSN message instead, so that
+   the information is not lost.  No report and no DSN message is
+   generated about the failure to deliver a report or a DSN message.
+
+9.4.2.  Report Object
+
+   A Report Object is a JSON object with the following members:
+
+   id:  REQUIRED.  The Transfer Identifier of the report, with the
+      syntax and semantics described in Section 5.1 and Section 6.4.
+
+   envelopeSender:  REQUIRED.  The Envelope Sender of the original
+      Message, to which the report is addressed.
+
+   reportingServer:  REQUIRED.  The host name of the server that
+      generates the report.
+
+   transferId:  OPTIONAL.  The Transfer Identifier of the request in
+      which the reporting server received the Message, if it received
+      the Message over HMTP.  It allows the original sender of that
+      request to correlate the report with the request.
+
+   envid:  OPTIONAL.  The value of the "envid" member of the Envelope of
+      the original Message, if present.
+
+   messageId:  OPTIONAL.  The value of the Message-ID header field of
+      the original Message, if present.
+
+   arrivalDate:  OPTIONAL.  A timestamp at which the reporting server
+      received the Message.
+
+   recipients:  REQUIRED.  A non-empty array of Recipient Report
+      Objects, one for each Envelope Recipient that the report covers.
+
+   returnedContent:  OPTIONAL.  A Content Object (Section 5.2) that
+      contains the original Message or its header section, as requested
+      by the "ret" member of the Envelope, under the same conditions as
+      for a DSN message.
+
+   A Recipient Report Object is a JSON object with the following
+   members:
+
+   finalRecipient:  REQUIRED.  The address of the Envelope Recipient to
+      which the report refers.
+
+   originalRecipient:  OPTIONAL.  The value of the "orcpt" member of the
+      Recipient Object, if present.
+
+   action:  REQUIRED.  The action taken for the recipient: one of
+      "failed", "delayed", "delivered", "relayed", and "expanded", with
+      the semantics of the Action field of [RFC3464].
+
+   problem:  REQUIRED for the actions "failed" and "delayed", and absent
+      otherwise.  A problem details object (Section 9.1) that describes
+      the reason for the action.  Its "smtpStatus" member is the
+      enhanced status code [RFC3463] of the recipient and MUST have the
+      class 5 for the action "failed" and the class 4 for the action
+      "delayed".  For the actions "delivered", "relayed", and
+      "expanded", the enhanced status code is "2.0.0".
+
+   remoteServer:  OPTIONAL.  The host name of the server that reported
+      the failure, such as the TargetName of an HMTP Endpoint or the
+      host name of an SMTP server.
+
+   lastAttempt:  OPTIONAL.  A timestamp of the last delivery attempt.
+
+   willRetryUntil:  OPTIONAL.  For the action "delayed", a timestamp
+      after which the reporting server will stop retrying.
+
+9.4.3.  Processing Reports
+
+   The server that receives a report verifies the request as described
+   in Section 8.3, except for the alignment check.  It rejects a report
+   whose "envelopeSender" is in a domain that it does not serve with the
+   "domain-not-served" problem type.  Otherwise, it responds with the
+   status code 204 (No Content).  By doing so, it accepts responsibility
+   for the report in the same way as for a Message.
+
+   The server SHOULD correlate the report with a Message that it sent,
+   using the "transferId", "envid", and "messageId" members.  It MAY
+   discard a report that it cannot correlate with any Message, but it
+   still responds with the status code 204 (No Content), so that the
+   reporting server does not retry the report.  Senders that rely on
+   reports SHOULD use values of "envid" that cannot be guessed (see
+   Section 13.9).
+
+   The server then makes the information available to the Envelope
+   Sender.  If the Envelope Sender is a mailbox that is read with a mail
+   client, the server SHOULD convert the report into a DSN message
+   [RFC3464] as described in Section 9.4.4 and deliver it to the
+   mailbox, so that existing clients can display it.  Automated
+   recipients, such as mailing list managers and bounce processing
+   systems, can process the report directly.
+
+9.4.4.  Mapping to DSN Fields
+
+   Table 3 lists the members of a report and the corresponding fields of
+   a DSN message [RFC3464].  Timestamps are converted to the date-time
+   format of [RFC5322].  Host names use the type "dns".  Addresses use
+   the type "rfc822" or, for internationalized addresses, the type
+   defined in [RFC6533].  The "returnedContent" member becomes the third
+   part of the DSN message, of type "message/rfc822" for the full
+   Message or "text/rfc822-headers" for the header section.
+
+    +==============================+=================================+
+    | Report member                | DSN field                       |
+    +==============================+=================================+
+    | reportingServer              | Reporting-MTA                   |
+    +------------------------------+---------------------------------+
+    | envid                        | Original-Envelope-Id            |
+    +------------------------------+---------------------------------+
+    | arrivalDate                  | Arrival-Date                    |
+    +------------------------------+---------------------------------+
+    | originalRecipient            | Original-Recipient              |
+    +------------------------------+---------------------------------+
+    | finalRecipient               | Final-Recipient                 |
+    +------------------------------+---------------------------------+
+    | action                       | Action                          |
+    +------------------------------+---------------------------------+
+    | problem, "smtpStatus" member | Status                          |
+    +------------------------------+---------------------------------+
+    | problem                      | Diagnostic-Code, of type "smtp" |
+    +------------------------------+---------------------------------+
+    | remoteServer                 | Remote-MTA                      |
+    +------------------------------+---------------------------------+
+    | lastAttempt                  | Last-Attempt-Date               |
+    +------------------------------+---------------------------------+
+    | willRetryUntil               | Will-Retry-Until                |
+    +------------------------------+---------------------------------+
+
+                Table 3: Mapping of Reports to DSN Fields
+
+   The "Status" field contains the "smtpStatus" member of the problem
+   details object, or "2.0.0" if the report contains no problem details
+   object for the recipient.  The "Diagnostic-Code" field is composed
+   from the "smtpReply", "smtpStatus", and "detail" members of the
+   problem details object, as described in Section 9.3, and is omitted
+   if there is no problem details object.
+
+9.4.5.  Example
+
+   In the example of Section 6.3, the Receiving Server "mx.example.net"
+   accepted the Message for "bob@example.net".  When it later fails to
+   deliver the Message because the mailbox is over quota, it performs
+   discovery for "example.com", the domain of the Envelope Sender, finds
+   a "reports" endpoint, and sends the following report instead of a DSN
+   message:
+
+   NOTE: '\' line wrapping per RFC 8792
+
+   POST /hmtp/v1/reports HTTP/1.1
+   Host: hmtp.provider.example
+   Content-Type: application/json
+   Content-Digest: sha-256=:...:
+   Signature-Input: hmtp=("@method" "@target-uri" "content-type" \
+     "content-digest");created=1767269400;expires=1767269700;\
+     keyid="hmtp2026";domain="example.net";alg="ed25519";tag="hmtp"
+   Signature: hmtp=:...:
+
+   {
+     "id": "Rp7xK1mN4qT8vZ2cW5bH9d",
+     "envelopeSender": "bounces+7f3a@example.com",
+     "reportingServer": "mx.example.net",
+     "transferId": "3q2-7wEXAMPLEd9Kc1fQ0g",
+     "messageId": "<20260101115500.9c1d@example.com>",
+     "arrivalDate": "2026-01-01T12:00:01Z",
+     "recipients": [
+       {
+         "finalRecipient": "bob@example.net",
+         "action": "failed",
+         "problem": {
+           "type": "urn:ietf:params:hmtp:error:mailbox-full",
+           "title": "Mailbox full",
+           "detail": "The mailbox bob@example.net is over quota.",
+           "smtpStatus": "5.2.2",
+           "smtpReply": 552
+         },
+         "lastAttempt": "2026-01-01T12:10:00Z"
+       }
+     ]
+   }
+
+   HTTP/1.1 204 No Content
+
+   The request is signed by "example.net", the domain of the reporting
+   server.  The server of "example.com" correlates the report with its
+   earlier transfer request through the "transferId" member, which is
+   scoped to its own Sending Domain.
+
 10.  SMTP Fallback and Interoperability
 
    HMTP is a self-contained protocol.  Support for SMTP is OPTIONAL and
-   serves only the interoperability with domains that do not support
-   HMTP.  A Sending Server that does not support SMTP rejects Envelope
-   Recipients whose domains do not support HMTP with the "routing-
-   failed" problem type and a permanent enhanced status code.
+   serves the interoperability with domains and systems that do not
+   support HMTP (Section 3.3).  A Sending Server that does not support
+   SMTP rejects Envelope Recipients whose domains do not support HMTP
+   with the "routing-failed" problem type and a permanent enhanced
+   status code.
 
 10.1.  When to Fall Back
 
+   The rules in this section apply when the next hop for an Envelope
+   Recipient is determined by discovery.  Forwarding a Message to a next
+   hop that is determined by local configuration is not a fallback and
+   is described in Section 3.3.
+
    A Sending Server that supports SMTP MAY deliver a Message to an
-   Envelope Recipient using SMTP only if both of the following
-   conditions hold:
+   Envelope Recipient using SMTP only if all of the following conditions
+   hold:
 
    1.  Discovery (Section 4) has determined that the domain of the
        Envelope Recipient does not support HMTP.
 
    2.  The Sending Server has no unexpired downgrade policy with the
        mode "enforce" for that domain (Section 10.2).
+
+   3.  Every must-understand capability that the request uses
+       (Section 5.4) can be forwarded over SMTP: its specification
+       defines how the capability is handled when the Message is
+       forwarded over SMTP, for example by mapping it to an SMTP
+       extension or by completing its function before the Message is
+       forwarded.
+
+   If the first two conditions hold but the third does not, the Message
+   can be delivered neither over HMTP nor over SMTP.  The delivery to
+   the affected Envelope Recipients fails with the "conversion-required"
+   problem type, and the Sending Server generates a delivery status
+   notification (Section 9.3).  The third condition also applies when
+   the next hop is determined by local configuration (Section 3.3).
 
    A Sending Server MUST NOT fall back to SMTP after a temporary failure
    of discovery or of an HMTP request, such as a DNS timeout, a
@@ -2650,6 +3096,12 @@ Table of Contents
       Recipients fails with the "conversion-required" problem type.  If
       "requireTls" is true and the requirements of [RFC8689] cannot be
       met, the delivery fails with the "tls-required" problem type.
+
+   *  Members of capabilities that are not must-understand are not
+      transferred over SMTP.  If a must-understand capability is mapped
+      to an SMTP extension that the SMTP server does not support, the
+      delivery fails with the "conversion-required" problem type, as for
+      other extensions that the Message requires.
 
    *  If the SMTP server does not support the DSN extension, the Sending
       Server behaves as specified in [RFC3461] for relaying to a server
@@ -2782,7 +3234,7 @@ Table of Contents
    and MTA-STS [RFC8461].
 
    The policy is expressed in the "policy" member of the Capabilities
-   Document (Section 4.2), which is a JSON object with the following
+   Document (Section 4.3), which is a JSON object with the following
    members:
 
    mode:  REQUIRED.  The string "enforce" or "none".
@@ -3003,7 +3455,7 @@ Table of Contents
    HMTP servers are exposed to resource exhaustion through large
    requests, many concurrent requests, slow transmission of requests,
    and Messages with many segments or recipients.  Servers SHOULD
-   advertise and enforce limits (Section 4.2), SHOULD apply rate limits
+   advertise and enforce limits (Section 4.3), SHOULD apply rate limits
    per Sending Domain and per IP address, and MAY verify the signature
    before receiving the content of the request.  Because the identity of
    the sender is established by the signature, rate limits and blocking
@@ -3024,7 +3476,23 @@ Table of Contents
    a local relay agreement.  Otherwise, the server would act as an open
    relay.
 
-13.9.  Transfer Identifiers
+13.9.  Delivery Status Reports
+
+   A report is authenticated by the domain of the reporting server, but
+   that domain is not necessarily related to the Envelope Sender or to
+   the Envelope Recipients, because a Message can pass through servers
+   of several domains.  An attacker can therefore send forged reports
+   about Messages that it did not handle, for example to cause a sender
+   to remove a valid address from a mailing list.  Receivers of reports
+   SHOULD accept only reports that they can correlate with a Message
+   they sent (Section 9.4.3).  Senders that act on reports automatically
+   SHOULD use unguessable values of "envid", so that only servers that
+   have handled the Message can produce a matching report.  The same
+   considerations apply to DSN messages, which are not authenticated at
+   all; reports are an improvement in that they identify the reporting
+   domain.
+
+13.10.  Transfer Identifiers
 
    Transfer Identifiers are scoped to the Sending Domain or to the
    authenticated account, so a third party cannot cause a legitimate
@@ -3086,7 +3554,7 @@ Table of Contents
                    | SVCB    | _hmtp      | RFC XXXX  |
                    +---------+------------+-----------+
 
-                                 Table 3
+                                 Table 4
 
 15.2.  Well-Known URI
 
@@ -3097,7 +3565,7 @@ Table of Contents
 
    Change Controller:  IETF
 
-   Specification Document(s):  Section 4.2 of RFC XXXX
+   Specification Document(s):  Section 4.3 of RFC XXXX
 
    Status:  permanent
 
@@ -3114,9 +3582,22 @@ Table of Contents
                        | hmtp | RFC XXXX  | active |
                        +------+-----------+--------+
 
-                                  Table 4
+                                  Table 5
 
-15.4.  Mail Transmission Types
+15.4.  HTTP Signature Metadata Parameter
+
+   IANA is requested to add the following entry to the "HTTP Signature
+   Metadata Parameters" registry [RFC9421]:
+
+   Name:  domain
+
+   Description:  The domain name under which the key identified by the
+      "keyid" parameter is published, as a DKIM key record, at the name
+      <keyid>._domainkey.<domain>.
+
+   Reference:  Section 8.2 of RFC XXXX
+
+15.5.  Mail Transmission Types
 
    IANA is requested to add the following entries to the "Mail
    Transmission Types" registry in the "Mail Parameters" registry group:
@@ -3133,9 +3614,9 @@ Table of Contents
    |               | client authentication                 |           |
    +---------------+---------------------------------------+-----------+
 
-                                  Table 5
+                                  Table 6
 
-15.5.  URN Sub-namespace
+15.6.  URN Sub-namespace
 
    IANA is requested to register the following entry in the "IETF URN
    Sub-namespace for Registered Protocol Parameter Identifiers" registry
@@ -3153,7 +3634,7 @@ Table of Contents
    Index value:  The name of a problem type, as registered in the "HMTP
       Problem Types" registry.
 
-15.6.  HMTP Registry Group
+15.7.  HMTP Registry Group
 
    IANA is requested to create a new registry group titled "HTTP Mail
    Transfer Protocol (HMTP)" containing the registries defined in the
@@ -3163,7 +3644,7 @@ Table of Contents
    does not conflict with an existing entry, and that the specification
    is consistent with the extension rules of Section 5.4.
 
-15.6.1.  HMTP Capabilities
+15.7.1.  HMTP Capabilities
 
    The registry contains capabilities with registered names.
    Capabilities identified by URIs are not registered (see
@@ -3183,7 +3664,7 @@ Table of Contents
 
    The registry is initially empty.
 
-15.6.2.  HMTP Endpoints
+15.7.2.  HMTP Endpoints
 
    The registry records the following fields for each endpoint name used
    in the "endpoints" member of a Version Object:
@@ -3197,21 +3678,22 @@ Table of Contents
 
    The initial contents are:
 
-        +============+============================+===============+
-        | Name       | Description                | Reference     |
-        +============+============================+===============+
-        | transfer   | Transfer of Messages       | Section 6 and |
-        |            | between servers            | Section 4.2.1 |
-        |            |                            | of RFC XXXX   |
-        +------------+----------------------------+---------------+
-        | submission | Submission of Messages by  | Section 7 and |
-        |            | Clients, and identities of | Section 4.2.1 |
-        |            | an authenticated Client    | of RFC XXXX   |
-        +------------+----------------------------+---------------+
+   +============+============================+=========================+
+   | Name       | Description                | Reference               |
+   +============+============================+=========================+
+   | transfer   | Transfer of Messages       | Section 6, Section 9.4, |
+   |            | between servers, and       | and Section 4.3.1 of    |
+   |            | delivery status reports    | RFC XXXX                |
+   +------------+----------------------------+-------------------------+
+   | submission | Submission of Messages     | Section 7 and           |
+   |            | by Clients, and            | Section 4.3.1 of RFC    |
+   |            | identities of an           | XXXX                    |
+   |            | authenticated Client       |                         |
+   +------------+----------------------------+-------------------------+
 
-                                  Table 6
+                                  Table 7
 
-15.6.3.  HMTP Content Encodings
+15.7.3.  HMTP Content Encodings
 
    The registry records the following fields for each encoding used in
    the "encoding" member of a Content Reference:
@@ -3231,9 +3713,9 @@ Table of Contents
           |        | characters separated by CRLF | of RFC XXXX |
           +--------+------------------------------+-------------+
 
-                                  Table 7
+                                  Table 8
 
-15.6.4.  HMTP Problem Types
+15.7.4.  HMTP Problem Types
 
    The registry records the following fields for each problem type:
 
@@ -3483,6 +3965,11 @@ Table of Contents
               STD 73, RFC 6522, DOI 10.17487/RFC6522, January 2012,
               <https://www.rfc-editor.org/rfc/rfc6522>.
 
+   [RFC6533]  Hansen, T., Ed., Newman, C., and A. Melnikov,
+              "Internationalized Delivery Status and Disposition
+              Notifications", RFC 6533, DOI 10.17487/RFC6533, February
+              2012, <https://www.rfc-editor.org/rfc/rfc6533>.
+
    [RFC6797]  Hodges, J., Jackson, C., and A. Barth, "HTTP Strict
               Transport Security (HSTS)", RFC 6797,
               DOI 10.17487/RFC6797, November 2012,
@@ -3517,6 +4004,11 @@ Table of Contents
               Update to DomainKeys Identified Mail (DKIM)", RFC 8301,
               DOI 10.17487/RFC8301, January 2018,
               <https://www.rfc-editor.org/rfc/rfc8301>.
+
+   [RFC8305]  Schinazi, D. and T. Pauly, "Happy Eyeballs Version 2:
+              Better Connectivity Using Concurrency", RFC 8305,
+              DOI 10.17487/RFC8305, December 2017,
+              <https://www.rfc-editor.org/rfc/rfc8305>.
 
    [RFC8461]  Margolis, D., Risher, M., Ramakrishnan, B., Brotman, A.,
               and J. Jones, "SMTP MTA Strict Transport Security (MTA-
@@ -3583,7 +4075,8 @@ A.1.  Discovery
        "1": {
          "endpoints": {
            "transfer": {
-             "uri": "/hmtp/v1/transfer"
+             "uri": "/hmtp/v1/transfer",
+             "reports": "/hmtp/v1/reports"
            }
          }
        }
@@ -3615,7 +4108,7 @@ A.2.  Transfer with Referenced Content
    Content-Digest: sha-256=:q1M8rT4vYw7Zb2Nd5Kf0Hs9Lx3Jc6Pg1Ue8Ra4Wi2Oo=:
    Signature-Input: hmtp=("@method" "@target-uri" "content-type" \
      "content-digest");created=1767268800;expires=1767269100;\
-     keyid="hmtp2026._domainkey.example.com";alg="ed25519";tag="hmtp"
+     keyid="hmtp2026";domain="example.com";alg="ed25519";tag="hmtp"
    Signature: hmtp=:Zm9vYmFyZXhhbXBsZXNpZ25hdHVyZXZhbHVlbm90cmVh\
      bGx5dmFsaWRqdXN0aWxsdXN0cmF0aXZlb25seWZvcg==:
 
@@ -3717,6 +4210,75 @@ A.4.  Retried Request
        }
      ]
    }
+
+A.5.  Delivery Status Report
+
+   The Receiving Server "mx.example.net" has accepted a Message from
+   "alice@example.com" for two recipients.  The Recipient Object of
+   "dan@example.net" requests notification on success, and the Recipient
+   Object of "bob@example.net" requests notification on delay.  The
+   Envelope requests the return of the header section ("ret" is "hdrs").
+   After four hours, the Message has been delivered to
+   "dan@example.net", while delivery to "bob@example.net" is still being
+   retried. "mx.example.net" reports both events in one report to the
+   "reports" endpoint of "example.com" (Section 4.3.3).  The report for
+   "dan@example.net" contains no problem details object, because the
+   action is "delivered":
+
+   NOTE: '\' line wrapping per RFC 8792
+
+   POST /hmtp/v1/reports HTTP/1.1
+   Host: hmtp.provider.example
+   Content-Type: application/json
+   Content-Digest: sha-256=:...:
+   Signature-Input: hmtp=("@method" "@target-uri" "content-type" \
+     "content-digest");created=1767286800;expires=1767287100;\
+     keyid="hmtp2026";domain="example.net";alg="ed25519";tag="hmtp"
+   Signature: hmtp=:...:
+
+   {
+     "id": "Dq3rT6yU9iO2pA5sD8fG1h",
+     "envelopeSender": "alice@example.com",
+     "reportingServer": "mx.example.net",
+     "transferId": "Lw2eR5tY8uI1oP4aS7dF0g",
+     "envid": "QQ271828",
+     "messageId": "<20260101130000.5e7b@example.com>",
+     "arrivalDate": "2026-01-01T13:00:02Z",
+     "recipients": [
+       {
+         "finalRecipient": "dan@example.net",
+         "originalRecipient": "rfc822;dan@example.net",
+         "action": "delivered",
+         "lastAttempt": "2026-01-01T16:59:58Z"
+       },
+       {
+         "finalRecipient": "bob@example.net",
+         "action": "delayed",
+         "problem": {
+           "type": "urn:ietf:params:hmtp:error:mailbox-full",
+           "title": "Mailbox full",
+           "detail": "The mailbox bob@example.net is over quota.",
+           "smtpStatus": "4.2.2",
+           "smtpReply": 452
+         },
+         "lastAttempt": "2026-01-01T17:00:00Z",
+         "willRetryUntil": "2026-01-06T13:00:02Z"
+       }
+     ],
+     "returnedContent": {
+       "data": "UmVjZWl2ZWQ6IGZyb20g..."
+     }
+   }
+
+   HTTP/1.1 204 No Content
+
+   The server of "example.com" correlates the report with its Message
+   through the "envid" member.  If "alice@example.com" is read with a
+   mail client, the server converts the report into a DSN message as
+   described in Section 9.4.4: the recipient "dan@example.net" receives
+   the "Status" field "2.0.0", the recipient "bob@example.net" the
+   "Status" field "4.2.2", and the "returnedContent" member becomes a
+   "text/rfc822-headers" part.
 
 Author's Address
 
