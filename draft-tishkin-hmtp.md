@@ -75,6 +75,7 @@ informative:
   RFC7208:
   RFC7489:
   RFC6522:
+  RFC6533:
   RFC6797:
   RFC7505:
   RFC7672:
@@ -262,6 +263,8 @@ properties are:
 - Errors are structured.  Failures are reported using Problem Details
   for HTTP APIs {{RFC9457}}, with a defined mapping to SMTP enhanced
   status codes.  The result is reported separately for each recipient.
+  Delivery status notifications can optionally be sent as JSON reports
+  to the domain of the sender instead of as DSN messages.
 
 - The protocol is extensible.  Servers advertise optional extensions,
   called capabilities, in the Capabilities Document, and requests
@@ -312,12 +315,13 @@ their HMTP counterparts.
 | Reply and enhanced status codes | Problem details, "smtpStatus" |
 | Successful reply to DATA | Result "accepted" for a recipient |
 | Received field "with ESMTP" | Received field "with HMTP" |
+| DSN messages | DSN messages or delivery status reports |
 {: #tab-smtp title="SMTP Concepts and Their Counterparts in HMTP"}
 
 The counterparts are specified in {{dns-record}},
 {{capabilities-document}}, {{capabilities}}, {{signing}},
 {{client-authentication}}, {{envelope}}, {{content-object}},
-{{problem-details}}, {{transfer-response}}, and {{trace}}.
+{{problem-details}}, {{transfer-response}}, {{trace}}, and {{reports}}.
 
 The following parts of the mail system are the same for both protocols:
 the Internet Message Format, DKIM and DMARC evaluation of the message,
@@ -837,7 +841,8 @@ versions:
     the following members:
 
     - "transfer": the Transfer Endpoint Object, which describes the
-      endpoint for transfer ({{transfer}});
+      endpoint for transfer ({{transfer}}) and the related OPTIONAL
+      endpoint for delivery status reports ({{reports}});
     - "submission": the Submission Endpoint Object, which describes
       the endpoint for submission ({{submission}}) and the related
       identities endpoint ({{identities}}).
@@ -901,9 +906,18 @@ ignore members they do not understand, new parameters can be added to
 an endpoint without changing the structure of the Capabilities
 Document.
 
-The Transfer Endpoint Object has no members other than "uri" in this
-document.  Transfer requests are authenticated by signatures
-({{signing}}), so no authentication parameters apply to it.
+The Transfer Endpoint Object contains the following member in
+addition to "uri":
+
+reports:
+: OPTIONAL.  The URI of the endpoint for delivery status reports
+  ({{reports}}), subject to the same rules as "uri".  If this member is
+  absent, the domains served by the host do not accept reports, and
+  DSN messages are sent to them instead.
+
+Transfer requests and reports are authenticated by signatures
+({{signing}}), so no authentication parameters apply to the Transfer
+Endpoint Object.
 
 The Submission Endpoint Object contains the following members in
 addition to "uri":
@@ -964,7 +978,8 @@ Cache-Control: max-age=86400
     "1": {
       "endpoints": {
         "transfer": {
-          "uri": "/hmtp/v1/transfer"
+          "uri": "/hmtp/v1/transfer",
+          "reports": "/hmtp/v1/reports"
         },
         "submission": {
           "uri": "/hmtp/v1/submission",
@@ -2516,7 +2531,7 @@ second for a permanent failure.
 | policy-rejected | Both | 403 | 4.7.1 / 5.7.1 | 451 / 550 |
 | unknown-recipient | Recipient | - | 5.1.1 | 550 |
 | invalid-address | Recipient | - | 5.1.3 | 553 |
-| domain-not-served | Recipient | - | 5.1.2 | 550 |
+| domain-not-served | Both | 422 | 5.1.2 | 550 |
 | mailbox-disabled | Recipient | - | 5.2.1 | 550 |
 | mailbox-full | Recipient | - | 4.2.2 / 5.2.2 | 452 / 552 |
 | routing-failed | Recipient | - | 4.4.4 / 5.4.4 | 451 / 550 |
@@ -2610,7 +2625,9 @@ invalid-address:
 
 domain-not-served:
 : The server does not accept Messages for the domain of the Envelope
-  Recipient and has no agreement to relay them.
+  Recipient and has no agreement to relay them, or, for a delivery
+  status report, does not serve the domain of the "envelopeSender"
+  member ({{reports-processing}}).
 
 mailbox-disabled:
 : The recipient mailbox exists but does not accept Messages.
@@ -2659,6 +2676,11 @@ semantics as the corresponding SMTP parameters.  In particular:
 
 - A server that relays a Message passes the DSN parameters on to the
   next hop, whether that hop uses HMTP or SMTP.
+
+- If the domain of the Envelope Sender supports delivery status
+  reports, the information is sent as a report instead of a DSN
+  message, as described in {{reports}}.  All HMTP servers MUST
+  continue to accept DSN messages, which are ordinary Messages.
 
 The fields of the DSN are filled in as follows:
 
@@ -2773,6 +2795,246 @@ acceptable ({{alignment}}):
   "to": [{"address": "alice@example.com"}]
 }
 ~~~
+
+## Delivery Status Reports {#reports}
+
+DSN messages are designed to be read by people and are difficult to
+process automatically, because the information has to be extracted
+from a multipart Message.  When both the reporting server and the
+domain of the Envelope Sender support HMTP, the same information can
+instead be sent as a delivery status report: a JSON document that is
+transferred directly to the "reports" endpoint of that domain.
+
+Delivery status reports are OPTIONAL.  A server that does not support
+them sends DSN messages as described in {{dsn}}, and every HMTP server
+MUST continue to accept DSN messages.  A report carries the same
+information as a DSN message and is subject to the same rules on when
+it is generated: a report is sent only where {{RFC3461}} and {{dsn}}
+call for a DSN.
+
+### Sending Reports {#reports-sending}
+
+When a server is about to generate a DSN for a Message whose Envelope
+Sender is not empty, it performs discovery ({{discovery}}) for the
+domain of the Envelope Sender.  If the domain supports HMTP and the
+Transfer Endpoint Object in a version that the server supports
+contains a "reports" member ({{endpoint-objects}}), the server SHOULD
+send a report to the URI given in that member instead of generating a
+DSN message.  Otherwise, it generates a DSN message.
+
+A report is sent with an HTTP POST request to the "reports" endpoint.
+The request has the same properties as a transfer request
+({{transfer-request}}), except that its content is a Report Object
+({{report-object}}):
+
+- The Content-Type header field is "application/json", and the
+  request contains a Content-Digest header field.
+
+- The request is signed as described in {{signing}} on behalf of the
+  domain of the reporting server.  Because a report has no Envelope
+  Sender, the alignment rules of {{alignment}} do not apply, as for a
+  Message with an empty Envelope Sender.
+
+- The "id" member of the Report Object is a Transfer Identifier, and
+  retries follow the rules of {{idempotency}}.
+
+A report covers one Message and MAY cover several of its Envelope
+Recipients, in the same way as a single DSN message.  A server MUST
+NOT combine information about different Messages in one report.
+
+If the request fails temporarily, the server retries it as described
+in {{idempotency}}.  If the request fails permanently, or if the server
+gives up retrying, it MUST generate a DSN message instead, so that the
+information is not lost.  No report and no DSN message is generated
+about the failure to deliver a report or a DSN message.
+
+### Report Object {#report-object}
+
+A Report Object is a JSON object with the following members:
+
+id:
+: REQUIRED.  The Transfer Identifier of the report, with the syntax
+  and semantics described in {{envelope}} and {{idempotency}}.
+
+envelopeSender:
+: REQUIRED.  The Envelope Sender of the original Message, to which the
+  report is addressed.
+
+reportingServer:
+: REQUIRED.  The host name of the server that generates the report.
+
+transferId:
+: OPTIONAL.  The Transfer Identifier of the request in which the
+  reporting server received the Message, if it received the Message
+  over HMTP.  It allows the original sender of that request to
+  correlate the report with the request.
+
+envid:
+: OPTIONAL.  The value of the "envid" member of the Envelope of the
+  original Message, if present.
+
+messageId:
+: OPTIONAL.  The value of the Message-ID header field of the original
+  Message, if present.
+
+arrivalDate:
+: OPTIONAL.  A timestamp at which the reporting server received the
+  Message.
+
+recipients:
+: REQUIRED.  A non-empty array of Recipient Report Objects, one for
+  each Envelope Recipient that the report covers.
+
+returnedContent:
+: OPTIONAL.  A Content Object ({{content-object}}) that contains the
+  original Message or its header section, as requested by the "ret"
+  member of the Envelope, under the same conditions as for a DSN
+  message.
+
+A Recipient Report Object is a JSON object with the following members:
+
+finalRecipient:
+: REQUIRED.  The address of the Envelope Recipient to which the report
+  refers.
+
+originalRecipient:
+: OPTIONAL.  The value of the "orcpt" member of the Recipient Object,
+  if present.
+
+action:
+: REQUIRED.  The action taken for the recipient: one of "failed",
+  "delayed", "delivered", "relayed", and "expanded", with the
+  semantics of the Action field of {{RFC3464}}.
+
+problem:
+: REQUIRED for the actions "failed" and "delayed", and absent
+  otherwise.  A problem details object ({{problem-details}}) that
+  describes the reason for the action.  Its "smtpStatus" member is the
+  enhanced status code {{RFC3463}} of the recipient and MUST have the
+  class 5 for the action "failed" and the class 4 for the action
+  "delayed".  For the actions "delivered", "relayed", and "expanded",
+  the enhanced status code is "2.0.0".
+
+remoteServer:
+: OPTIONAL.  The host name of the server that reported the failure,
+  such as the TargetName of an HMTP Endpoint or the host name of an
+  SMTP server.
+
+lastAttempt:
+: OPTIONAL.  A timestamp of the last delivery attempt.
+
+willRetryUntil:
+: OPTIONAL.  For the action "delayed", a timestamp after which the
+  reporting server will stop retrying.
+
+### Processing Reports {#reports-processing}
+
+The server that receives a report verifies the request as described in
+{{verification}}, except for the alignment check.  It rejects a report
+whose "envelopeSender" is in a domain that it does not serve with the
+"domain-not-served" problem type.  Otherwise, it responds with the
+status code 204 (No Content).  By doing so, it accepts responsibility
+for the report in the same way as for a Message.
+
+The server SHOULD correlate the report with a Message that it sent,
+using the "transferId", "envid", and "messageId" members.  It MAY
+discard a report that it cannot correlate with any Message, but it
+still responds with the status code 204 (No Content), so that the
+reporting server does not retry the report.  Senders that rely on
+reports SHOULD use values of "envid" that cannot be guessed (see
+{{security-reports}}).
+
+The server then makes the information available to the Envelope
+Sender.  If the Envelope Sender is a mailbox that is read with a mail
+client, the server SHOULD convert the report into a DSN message
+{{RFC3464}} as described in {{reports-mapping}} and deliver it to the
+mailbox, so that existing clients can display it.  Automated
+recipients, such as mailing list managers and bounce processing
+systems, can process the report directly.
+
+### Mapping to DSN Fields {#reports-mapping}
+
+{{tab-reports}} lists the members of a report and the corresponding
+fields of a DSN message {{RFC3464}}.  Timestamps are converted to the
+date-time format of {{RFC5322}}.  Host names use the type "dns".
+Addresses use the type "rfc822" or, for internationalized addresses,
+the type defined in {{RFC6533}}.  The "returnedContent" member becomes
+the third part of the DSN message, of type "message/rfc822" for the
+full Message or "text/rfc822-headers" for the header section.
+
+| Report member | DSN field |
+|---|---|
+| reportingServer | Reporting-MTA |
+| envid | Original-Envelope-Id |
+| arrivalDate | Arrival-Date |
+| originalRecipient | Original-Recipient |
+| finalRecipient | Final-Recipient |
+| action | Action |
+| problem, "smtpStatus" member | Status |
+| problem | Diagnostic-Code, of type "smtp" |
+| remoteServer | Remote-MTA |
+| lastAttempt | Last-Attempt-Date |
+| willRetryUntil | Will-Retry-Until |
+{: #tab-reports title="Mapping of Reports to DSN Fields"}
+
+The "Status" field contains the "smtpStatus" member of the problem
+details object, or "2.0.0" if the report contains no problem details
+object for the recipient.  The "Diagnostic-Code" field is composed from
+the "smtpReply", "smtpStatus", and "detail" members of the problem
+details object, as described in {{dsn}}, and is omitted if there is no
+problem details object.
+
+### Example {#reports-example}
+
+In the example of {{transfer-response}}, the Receiving Server
+"mx.example.net" accepted the Message for "bob@example.net".  When it
+later fails to deliver the Message because the mailbox is over quota,
+it performs discovery for "example.com", the domain of the Envelope
+Sender, finds a "reports" endpoint, and sends the following report
+instead of a DSN message:
+
+~~~ http-message
+NOTE: '\' line wrapping per RFC 8792
+
+POST /hmtp/v1/reports HTTP/1.1
+Host: hmtp.provider.example
+Content-Type: application/json
+Content-Digest: sha-256=:...:
+Signature-Input: hmtp=("@method" "@target-uri" "content-type" \
+  "content-digest");created=1767269400;expires=1767269700;\
+  keyid="hmtp2026";domain="example.net";alg="ed25519";tag="hmtp"
+Signature: hmtp=:...:
+
+{
+  "id": "Rp7xK1mN4qT8vZ2cW5bH9d",
+  "envelopeSender": "bounces+7f3a@example.com",
+  "reportingServer": "mx.example.net",
+  "transferId": "3q2-7wEXAMPLEd9Kc1fQ0g",
+  "messageId": "<20260101115500.9c1d@example.com>",
+  "arrivalDate": "2026-01-01T12:00:01Z",
+  "recipients": [
+    {
+      "finalRecipient": "bob@example.net",
+      "action": "failed",
+      "problem": {
+        "type": "urn:ietf:params:hmtp:error:mailbox-full",
+        "title": "Mailbox full",
+        "detail": "The mailbox bob@example.net is over quota.",
+        "smtpStatus": "5.2.2",
+        "smtpReply": 552
+      },
+      "lastAttempt": "2026-01-01T12:10:00Z"
+    }
+  ]
+}
+
+HTTP/1.1 204 No Content
+~~~
+
+The request is signed by "example.net", the domain of the reporting
+server.  The server of "example.com" correlates the report with its
+earlier transfer request through the "transferId" member, which is
+scoped to its own Sending Domain.
 
 # SMTP Fallback and Interoperability {#smtp-fallback}
 
@@ -3239,6 +3501,22 @@ transfer endpoint MUST NOT accept Messages for domains it does not
 serve, except under a local relay agreement.  Otherwise, the server
 would act as an open relay.
 
+## Delivery Status Reports {#security-reports}
+
+A report is authenticated by the domain of the reporting server, but
+that domain is not necessarily related to the Envelope Sender or to
+the Envelope Recipients, because a Message can pass through servers of
+several domains.  An attacker can therefore send forged reports about
+Messages that it did not handle, for example to cause a sender to
+remove a valid address from a mailing list.  Receivers of reports
+SHOULD accept only reports that they can correlate with a Message they
+sent ({{reports-processing}}).  Senders that act on reports
+automatically SHOULD use unguessable values of "envid", so that only
+servers that have handled the Message can produce a matching report.
+The same considerations apply to DSN messages, which are not
+authenticated at all; reports are an improvement in that they identify
+the reporting domain.
+
 ## Transfer Identifiers
 
 Transfer Identifiers are scoped to the Sending Domain or to the
@@ -3416,7 +3694,7 @@ The initial contents are:
 
 | Name | Description | Reference |
 |---|---|---|
-| transfer | Transfer of Messages between servers | {{transfer}} and {{endpoint-objects}} of RFC XXXX |
+| transfer | Transfer of Messages between servers, and delivery status reports | {{transfer}}, {{reports}}, and {{endpoint-objects}} of RFC XXXX |
 | submission | Submission of Messages by Clients, and identities of an authenticated Client | {{submission}} and {{endpoint-objects}} of RFC XXXX |
 
 ### HMTP Content Encodings {#iana-encodings}
@@ -3480,7 +3758,8 @@ Cache-Control: max-age=86400
     "1": {
       "endpoints": {
         "transfer": {
-          "uri": "/hmtp/v1/transfer"
+          "uri": "/hmtp/v1/transfer",
+          "reports": "/hmtp/v1/reports"
         }
       }
     }
@@ -3621,3 +3900,74 @@ Content-Type: application/json
   ]
 }
 ~~~
+
+## Delivery Status Report {#example-report}
+
+The Receiving Server "mx.example.net" has accepted a Message from
+"alice@example.com" for two recipients.  The Recipient Object of
+"dan@example.net" requests notification on success, and the Recipient
+Object of "bob@example.net" requests notification on delay.  The
+Envelope requests the return of the header section ("ret" is "hdrs").
+After four hours, the Message has been delivered to "dan@example.net",
+while delivery to "bob@example.net" is still being retried.
+"mx.example.net" reports both events in one report to the "reports"
+endpoint of "example.com" ({{capabilities-document-example}}).  The
+report for "dan@example.net" contains no problem details object,
+because the action is "delivered":
+
+~~~ http-message
+NOTE: '\' line wrapping per RFC 8792
+
+POST /hmtp/v1/reports HTTP/1.1
+Host: hmtp.provider.example
+Content-Type: application/json
+Content-Digest: sha-256=:...:
+Signature-Input: hmtp=("@method" "@target-uri" "content-type" \
+  "content-digest");created=1767286800;expires=1767287100;\
+  keyid="hmtp2026";domain="example.net";alg="ed25519";tag="hmtp"
+Signature: hmtp=:...:
+
+{
+  "id": "Dq3rT6yU9iO2pA5sD8fG1h",
+  "envelopeSender": "alice@example.com",
+  "reportingServer": "mx.example.net",
+  "transferId": "Lw2eR5tY8uI1oP4aS7dF0g",
+  "envid": "QQ271828",
+  "messageId": "<20260101130000.5e7b@example.com>",
+  "arrivalDate": "2026-01-01T13:00:02Z",
+  "recipients": [
+    {
+      "finalRecipient": "dan@example.net",
+      "originalRecipient": "rfc822;dan@example.net",
+      "action": "delivered",
+      "lastAttempt": "2026-01-01T16:59:58Z"
+    },
+    {
+      "finalRecipient": "bob@example.net",
+      "action": "delayed",
+      "problem": {
+        "type": "urn:ietf:params:hmtp:error:mailbox-full",
+        "title": "Mailbox full",
+        "detail": "The mailbox bob@example.net is over quota.",
+        "smtpStatus": "4.2.2",
+        "smtpReply": 452
+      },
+      "lastAttempt": "2026-01-01T17:00:00Z",
+      "willRetryUntil": "2026-01-06T13:00:02Z"
+    }
+  ],
+  "returnedContent": {
+    "data": "UmVjZWl2ZWQ6IGZyb20g..."
+  }
+}
+
+HTTP/1.1 204 No Content
+~~~
+
+The server of "example.com" correlates the report with its Message
+through the "envid" member.  If "alice@example.com" is read with a mail
+client, the server converts the report into a DSN message as described
+in {{reports-mapping}}: the recipient "dan@example.net" receives the
+"Status" field "2.0.0", the recipient "bob@example.net" the "Status"
+field "4.2.2", and the "returnedContent" member becomes a
+"text/rfc822-headers" part.
