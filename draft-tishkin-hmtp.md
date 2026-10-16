@@ -4052,3 +4052,10 @@ in {{reports-mapping}}: the recipient "dan@example.net" receives the
 "Status" field "2.0.0", the recipient "bob@example.net" the "Status"
 field "4.2.2", and the "returnedContent" member becomes a
 "text/rfc822-headers" part.
+
+# Acknowledgments
+{:numbered="false"}
+
+The author thanks John Klensin and John Levine for their comments on
+an earlier version of this document, in particular on its
+relationship to SMTP and on related work.
