@@ -80,6 +80,7 @@ informative:
   RFC7672:
   RFC8098:
   RFC8301:
+  RFC8305:
   RFC8461:
   RFC8551:
   RFC8601:
@@ -623,8 +624,8 @@ following rules:
   record that lists an unsupported key in the "mandatory" SvcParam is
   unusable, as specified in {{RFC9460}}.
 
-- If multiple ServiceMode records are present, they are tried in
-  order of priority as specified in {{RFC9460}}.
+- If multiple ServiceMode records are present, the host to connect to
+  is selected as described in {{host-selection}}.
 
 A Sending Server uses the domain of each Envelope Recipient to locate
 the Receiving Server.  A Client uses the domain of its own address to
@@ -653,6 +654,91 @@ The result of the DNS query is interpreted as follows:
   The server MUST NOT conclude that the domain does not support HMTP.
 
 Results of DNS queries MAY be cached for the duration of their TTL.
+
+## Selection of the Target Host {#host-selection}
+
+A domain can publish several ServiceMode records, for example to
+provide redundant hosts or a backup host.  The server or Client
+selects among them in the same way as an SMTP client selects among MX
+records ({{Section 5.1 of RFC5321}}):
+
+1. It discards the records that are unusable as described in
+   {{dns-record}}.
+
+2. It orders the remaining records by their SvcPriority, from the
+   lowest value to the highest.  A lower value indicates a more
+   preferred host.
+
+3. It orders records with the same SvcPriority randomly, so that each
+   of them is equally likely to be tried first, as recommended in
+   {{Section 2.4.1 of RFC9460}}.  SVCB records have no weight, so the
+   load is distributed evenly among hosts of equal priority.
+
+4. It tries the hosts in the resulting order.  A host with a higher
+   SvcPriority value is tried only after all hosts with lower values
+   have failed.
+
+5. If the attempt fails at every host, the delivery attempt has failed
+   temporarily.  The server retries later as described in
+   {{idempotency}}, starting again with step 1, so that a new random
+   order is used.
+
+If the TargetName of a host resolves to several IP addresses, the
+server or Client tries these addresses before it proceeds to the next
+host, for example using the Happy Eyeballs algorithm {{RFC8305}}.
+
+The server or Client proceeds to the next host if the attempt at the
+current host fails in one of the following ways:
+
+- The TargetName cannot be resolved, or no connection can be
+  established to any of its addresses.
+
+- The TLS handshake fails, including a failure to validate the
+  certificate of the host.
+
+- The Capabilities Document cannot be retrieved because of a
+  temporary failure, or the host is not usable according to
+  {{capabilities-document}}.
+
+- No response is received, for example because the connection is
+  lost or a timeout expires.
+
+- The response has the status code 500, 502, 503, or 504.
+
+Any other response ends the attempt, and the server or Client does
+not try further hosts:
+
+- A response with the status code 200 (OK) or 202 (Accepted)
+  completes the attempt.  Envelope Recipients with the result
+  "deferred" are retried later as described in {{idempotency}}.
+
+- Any other response is handled as described in {{idempotency}},
+  according to the class of the "smtpStatus" member: a temporary
+  failure, such as "rate-limited", is retried later, because such
+  conditions usually apply to the domain as a whole, and a permanent
+  failure is not retried.
+
+A retry at the next host after a lost response is a retry in the sense
+of {{idempotency}}: the sender sends the identical request with the
+same Transfer Identifier.  To ensure that such a retry does not cause
+duplicate delivery, a domain that publishes several hosts SHOULD
+ensure that the stored Transfer Identifiers are shared among them.
+
+A server MAY reuse an established connection to a host for further
+requests for the same domain while the SVCB records that led to the
+host remain valid.
+
+In the following example, the hosts "hmtp1.example.net" and
+"hmtp2.example.net" share the lowest priority.  Each of them is tried
+first with equal probability, and the other one is tried if the first
+fails.  The host "backup.provider.example" is tried only if both
+fail:
+
+~~~ dns
+_hmtp.example.net.  3600 IN SVCB 10 hmtp1.example.net. alpn=h2,h3
+_hmtp.example.net.  3600 IN SVCB 10 hmtp2.example.net. alpn=h2,h3
+_hmtp.example.net.  3600 IN SVCB 20 backup.provider.example. alpn=h2
+~~~
 
 ## Capabilities Document {#capabilities-document}
 
