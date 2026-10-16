@@ -3374,7 +3374,7 @@ following information in addition to the content of the Message:
   the mail of different customers of a provider;
 
 - the IP address from which the request was received, which
-  identifies an intermediary rather than the Sending Server 
+  identifies an intermediary rather than the Sending Server
   when the request passes through a proxy;
 
 - the results of the DKIM and DMARC evaluation of the Message;
@@ -3385,7 +3385,7 @@ following information in addition to the content of the Message:
 SPF {{RFC7208}} authorizes hosts to use a domain in SMTP sessions and
 is not used for HMTP requests, whose sender is authenticated by the
 signature.  Because a Sending Server can operate behind proxies and
-content delivery networks, Receiving Servers SHOULD NOT evaluate SPF 
+content delivery networks, Receiving Servers SHOULD NOT evaluate SPF
 against the IP address of an HMTP request.  SPF continues to apply to SMTP hops.
 
 ## Reputation of Sending Domains {#abuse-reputation}
