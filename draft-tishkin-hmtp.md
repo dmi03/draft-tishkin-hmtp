@@ -72,6 +72,7 @@ informative:
   RFC3207:
   RFC4865:
   RFC4954:
+  RFC5965:
   RFC7208:
   RFC7489:
   RFC6522:
@@ -3350,6 +3351,112 @@ Operating both protocols:
 : A server that supports both protocols can use a single queue,
   because the Message is the same in both protocols and only the
   Envelope representation differs.
+
+# Abuse and Reputation Considerations {#abuse}
+
+This document does not define spam filtering or reputation
+algorithms, which remain a matter of the local policy of each
+Receiving Server.  This section describes the information that HMTP
+makes available to such policies and the ways in which features of
+HMTP can be abused.
+
+## Information Available to Receivers {#abuse-information}
+
+When it evaluates a transfer request, a Receiving Server can use the
+following information in addition to the content of the Message:
+
+- the Sending Domain, authenticated by the signature of the request
+  ({{verification}}), and its alignment with the Envelope Sender
+  ({{alignment}});
+
+- the selector of the signing key, which a domain can use to separate
+  different streams of mail, such as transactional and bulk mail, or
+  the mail of different customers of a provider;
+
+- the IP address from which the request was received, which
+  identifies an intermediary rather than the Sending Server 
+  when the request passes through a proxy;
+
+- the results of the DKIM and DMARC evaluation of the Message;
+
+- the Envelope, including the Envelope Sender and the number of
+  Envelope Recipients.
+
+SPF {{RFC7208}} authorizes hosts to use a domain in SMTP sessions and
+is not used for HMTP requests, whose sender is authenticated by the
+signature.  Because a Sending Server can operate behind proxies and
+content delivery networks, Receiving Servers SHOULD NOT evaluate SPF 
+against the IP address of an HMTP request.  SPF continues to apply to SMTP hops.
+
+## Reputation of Sending Domains {#abuse-reputation}
+
+A valid signature establishes which domain is responsible for a
+request.  It does not indicate that the request is legitimate.
+Domains can be registered at low cost, so an attacker can sign
+requests with newly registered domains.  Receiving Servers SHOULD
+therefore treat Sending Domains without history with caution, for
+example by applying lower rate limits, or by deferring part of their
+mail with the "rate-limited" or "policy-rejected" problem types and a
+temporary enhanced status code.
+
+A Sending Domain is responsible for all Envelope Senders that are
+aligned with it ({{alignment}}), including those in its subdomains, and
+the reputation earned with such mail applies to the Sending Domain.
+When a provider signs with its own domain on behalf of its customers
+({{third-party}}), the reputation accrues to the provider, which is
+then responsible for abuse by its customers.  When a customer
+delegates a selector to a provider, the reputation accrues to the
+domain of the customer.  The restrictions on signatures of registry
+suffixes described in {{security}} also apply to reputation.
+
+## Rejection and Backscatter {#abuse-rejection}
+
+Because the Receiving Server reports the result for each Envelope
+Recipient in its response ({{transfer-response}}), it can reject an
+unwanted Message during the request.  A Receiving Server SHOULD
+reject a Message that it does not intend to deliver in its response,
+rather than accepting it and generating a delivery status
+notification later.  Later notifications create additional traffic
+and, for Messages that reached the Receiving Server through a relay,
+can be sent to an Envelope Sender that did not send the Message.
+
+The "detail" member of a problem details object for a policy
+rejection SHOULD allow a legitimate sender to understand the reason
+for the rejection, but does not need to reveal the internal rules of
+the filtering system.
+
+## Abuse of Content References {#abuse-references}
+
+An attacker can include Content References to URIs of a third party in
+many requests and thereby cause Receiving Servers to send retrieval
+requests to that party.  The checks of size and digest prevent such
+content from being delivered, but not the retrieval requests
+themselves.  Receiving Servers SHOULD limit the number and rate of
+retrievals per Sending Domain and per target host.  Because each
+request is signed, such abuse can be attributed to the Sending Domain.
+
+Content References can also be used to deliver malicious content.
+Because a Message is reconstructed completely before it is delivered
+({{reference-retrieval}}), Receiving Servers can apply their content
+checks to referenced content in the same way as to inline content.
+
+## Abuse of Submission {#abuse-submission}
+
+Compromised Client credentials are a common source of abusive mail.
+Submission Servers SHOULD apply rate limits per account, SHOULD
+monitor accounts for unusual sending patterns, and SHOULD support
+bearer tokens with a limited lifetime ({{client-authentication}}).
+Because a Submission Server signs the Messages that it relays with
+keys of its Sending Domain, abuse by its users affects the reputation
+of that domain.
+
+## Abuse Reports {#abuse-reports}
+
+Complaints about abusive Messages, such as reports in the Abuse
+Reporting Format {{RFC5965}}, are sent as ordinary Messages and are not
+affected by this document.  Delivery status reports ({{reports}}) are
+not intended for complaints.  A structured endpoint for abuse reports
+could be defined as a capability ({{capabilities}}).
 
 # Implementation Status
 
