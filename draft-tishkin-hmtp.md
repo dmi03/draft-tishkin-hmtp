@@ -2616,8 +2616,9 @@ routing-failed:
 conversion-required:
 : Delivery requires a conversion of the Message that the server does
   not perform, for example because an SMTP server used for fallback
-  does not support an extension that the Message requires
-  ({{when-to-fall-back}}).
+  does not support an extension that the Message requires, or because
+  the request uses a must-understand capability that cannot be
+  forwarded over SMTP ({{when-to-fall-back}}).
 
 tls-required:
 : The Envelope requests REQUIRETLS, and the requirement cannot be
@@ -2779,14 +2780,27 @@ hop that is determined by local configuration is not a fallback and is
 described in {{coexistence}}.
 
 A Sending Server that supports SMTP MAY deliver a Message to an
-Envelope Recipient using SMTP only if both of the following
-conditions hold:
+Envelope Recipient using SMTP only if all of the following conditions
+hold:
 
 1. Discovery ({{discovery}}) has determined that the domain of the
    Envelope Recipient does not support HMTP.
 
 2. The Sending Server has no unexpired downgrade policy with the mode
    "enforce" for that domain ({{policy}}).
+
+3. Every must-understand capability that the request uses
+   ({{capabilities}}) can be forwarded over SMTP: its specification
+   defines how the capability is handled when the Message is forwarded
+   over SMTP, for example by mapping it to an SMTP extension or by
+   completing its function before the Message is forwarded.
+
+If the first two conditions hold but the third does not, the Message
+can be delivered neither over HMTP nor over SMTP.  The delivery to the
+affected Envelope Recipients fails with the "conversion-required"
+problem type, and the Sending Server generates a delivery status
+notification ({{dsn}}).  The third condition also applies when the next
+hop is determined by local configuration ({{coexistence}}).
 
 A Sending Server MUST NOT fall back to SMTP after a temporary failure
 of discovery or of an HMTP request, such as a DNS timeout, a
@@ -2819,6 +2833,12 @@ specified in {{RFC5321}}, with the following requirements:
   Recipients fails with the "conversion-required" problem type.  If
   "requireTls" is true and the requirements of {{RFC8689}} cannot be
   met, the delivery fails with the "tls-required" problem type.
+
+- Members of capabilities that are not must-understand are not
+  transferred over SMTP.  If a must-understand capability is mapped to
+  an SMTP extension that the SMTP server does not support, the delivery
+  fails with the "conversion-required" problem type, as for other
+  extensions that the Message requires.
 
 - If the SMTP server does not support the DSN extension, the Sending
   Server behaves as specified in {{RFC3461}} for relaying to a server
