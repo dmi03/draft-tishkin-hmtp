@@ -268,13 +268,14 @@ properties are:
   indicate the capabilities they use, so that new functionality can be
   added without changing the base protocol.
 
-- Deployment is incremental.  HMTP is a complete protocol on its own
-  and does not depend on SMTP.  An implementation can optionally
-  deliver messages using SMTP when a receiving domain does not
-  publish an HMTP endpoint.  Because the message is carried
-  unmodified, such a fallback requires no conversion of the message,
-  provided that the SMTP server supports the SMTP extensions that the
-  message requires.
+- HMTP coexists with SMTP.  HMTP is a complete protocol on its own and
+  does not depend on SMTP, but the two can be combined freely: the
+  protocol is chosen separately for each hop, so a server can receive a
+  message with one protocol and forward it with the other.  An
+  implementation can also deliver messages using SMTP when a receiving
+  domain does not publish an HMTP endpoint.  Because the message is
+  carried unmodified, no conversion is needed, provided that the SMTP
+  server supports the SMTP extensions that the message requires.
 
 HMTP defines two roles: submission, in which a client hands a message
 to its mail service, and transfer, in which one mail server delivers
@@ -561,12 +562,78 @@ recipient.
 
 ## Coexistence with SMTP {#coexistence}
 
-HMTP does not change the use of MX records {{RFC5321}} or the
-operation of existing SMTP servers.  A domain can publish an HMTP
-Endpoint in addition to its MX records, and a server can support both
-protocols at the same time.  Because the Message is carried
-unmodified, a Message can travel over a path that combines HMTP and
-SMTP hops without conversion.
+HMTP is designed to coexist with SMTP permanently, not only during a
+transition period.  HMTP does not change the use of MX records
+{{RFC5321}} or the operation of existing SMTP servers.  A domain can
+publish an HMTP Endpoint in addition to its MX records, and a server
+can support both protocols at the same time.
+
+The protocol is chosen separately for each hop.  A server that supports
+both protocols decides how to forward a Message independently of the
+protocol over which it received the Message, so that all four
+combinations shown in {{fig-hops}} are possible:
+
+~~~
+   incoming hop                                     outgoing hop
+
+  (1) --- HMTP --->  +------------------------+  --- HMTP --->
+  (2) --- HMTP --->  |  Server that supports  |  --- SMTP --->
+  (3) --- SMTP --->  |  both HMTP and SMTP    |  --- HMTP --->
+  (4) --- SMTP --->  |                        |  --- SMTP --->
+                     +------------------------+
+~~~
+{: #fig-hops title="Combinations of Incoming and Outgoing Hops"}
+
+HMTP to HMTP:
+: A server relays a Message that it received over HMTP to another HMTP
+  Endpoint, for example a Submission Server that delivers to a domain
+  that publishes an HMTP Endpoint.
+
+HMTP to SMTP:
+: A server accepts a Message over HMTP and forwards it over SMTP.
+  Examples are a Submission Server that sends all outbound Messages
+  through an SMTP relay of its operator, a Receiving Server that passes
+  accepted Messages to an existing SMTP-based mail system of the
+  recipient domain, and a Sending Server that falls back to SMTP for a
+  domain that does not support HMTP ({{smtp-fallback}}).
+
+SMTP to HMTP:
+: A server accepts a Message over SMTP and forwards it over HMTP.
+  Examples are an existing MX server that relays Messages to an
+  HMTP-based mailbox service of the same domain, and an SMTP server that
+  delivers outbound Messages to domains that publish an HMTP Endpoint,
+  as described in {{gateways}}.
+
+SMTP to SMTP:
+: The operation of SMTP is not affected by HMTP.
+
+In every combination, the Message is forwarded unchanged, except for
+the trace header fields that each server prepends ({{trace}}), and the
+Envelope information is carried over between the parameters of SMTP
+commands and the members of the Envelope as described in
+{{when-to-fall-back}} and {{gateways}}.  DKIM signatures and end-to-end
+protection of the Message therefore remain valid on any path.
+
+How the protocol for an outgoing hop is chosen depends on how the next
+hop is determined:
+
+- If the next hop is determined by discovery for the domain of an
+  Envelope Recipient, HMTP is used if the domain supports it.  SMTP is
+  used only under the conditions of {{when-to-fall-back}}, which include
+  the downgrade policy of the domain.
+
+- If the next hop is determined by local configuration, for example a
+  relay of the operator of the server, the internal mail system of the
+  recipient domain, or a filtering or backup service under an agreement
+  with the recipient domain, the server uses the protocol configured
+  for that next hop.  This is not a fallback in the sense of
+  {{smtp-fallback}}.  The rules of {{when-to-fall-back}} apply to the
+  server that eventually delivers the Message to the recipient domain.
+
+As a result, a domain can, for example, receive mail over HMTP while
+its outbound mail continues to use SMTP, or send mail over HMTP while
+it continues to receive mail over SMTP, without any dependency between
+the two directions.
 
 Support for SMTP is not required for an HMTP implementation.  A
 server that implements only HMTP is fully conformant to this
@@ -2699,12 +2766,17 @@ acceptable ({{alignment}}):
 # SMTP Fallback and Interoperability {#smtp-fallback}
 
 HMTP is a self-contained protocol.  Support for SMTP is OPTIONAL and
-serves only the interoperability with domains that do not support
-HMTP.  A Sending Server that does not support SMTP rejects Envelope
-Recipients whose domains do not support HMTP with the "routing-failed"
-problem type and a permanent enhanced status code.
+serves the interoperability with domains and systems that do not support
+HMTP ({{coexistence}}).  A Sending Server that does not support SMTP
+rejects Envelope Recipients whose domains do not support HMTP with the
+"routing-failed" problem type and a permanent enhanced status code.
 
 ## When to Fall Back {#when-to-fall-back}
+
+The rules in this section apply when the next hop for an Envelope
+Recipient is determined by discovery.  Forwarding a Message to a next
+hop that is determined by local configuration is not a fallback and is
+described in {{coexistence}}.
 
 A Sending Server that supports SMTP MAY deliver a Message to an
 Envelope Recipient using SMTP only if both of the following
