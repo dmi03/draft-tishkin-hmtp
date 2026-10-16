@@ -22,8 +22,7 @@ Abstract
    optional extensions or not at all.  Security is built in: transport
    encryption is mandatory, and every transfer request is signed on
    behalf of the sending domain, using keys published with the
-   DomainKeys Identified Mail (DKIM) key publication mechanism, so that
-   receivers can identify senders independently of their IP addresses.
+   DomainKeys Identified Mail (DKIM) key publication mechanism.
    Requests carry identifiers that make retries safe, failures are
    reported per recipient as structured problem details with a mapping
    to SMTP status codes, and extensions are declared explicitly as
@@ -142,40 +141,48 @@ Table of Contents
      10.2.  Downgrade Policy
      10.3.  SMTP to HMTP Gateways
    11. Deployment and Transition Considerations
-   12. Implementation Status
-   13. Security Considerations
-     13.1.  Transport Security
-     13.2.  DNS and Downgrade Attacks
-     13.3.  Signatures and Replay
-     13.4.  Key Management
-     13.5.  Sender Alignment
-     13.6.  Content References
-     13.7.  Denial of Service
-     13.8.  Client Authentication
-     13.9.  Delivery Status Reports
-     13.10. Transfer Identifiers
-   14. Privacy Considerations
-   15. IANA Considerations
-     15.1.  Underscored and Globally Scoped DNS Node Name
-     15.2.  Well-Known URI
-     15.3.  DKIM Service Type
-     15.4.  HTTP Signature Metadata Parameter
-     15.5.  Mail Transmission Types
-     15.6.  URN Sub-namespace
-     15.7.  HMTP Registry Group
-       15.7.1.  HMTP Capabilities
-       15.7.2.  HMTP Endpoints
-       15.7.3.  HMTP Content Encodings
-       15.7.4.  HMTP Problem Types
-   16. References
-     16.1.  Normative References
-     16.2.  Informative References
+   12. Abuse and Reputation Considerations
+     12.1.  Information Available to Receivers
+     12.2.  Reputation of Sending Domains
+     12.3.  Rejection and Backscatter
+     12.4.  Abuse of Content References
+     12.5.  Abuse of Submission
+     12.6.  Abuse Reports
+   13. Implementation Status
+   14. Security Considerations
+     14.1.  Transport Security
+     14.2.  DNS and Downgrade Attacks
+     14.3.  Signatures and Replay
+     14.4.  Key Management
+     14.5.  Sender Alignment
+     14.6.  Content References
+     14.7.  Denial of Service
+     14.8.  Client Authentication
+     14.9.  Delivery Status Reports
+     14.10. Transfer Identifiers
+   15. Privacy Considerations
+   16. IANA Considerations
+     16.1.  Underscored and Globally Scoped DNS Node Name
+     16.2.  Well-Known URI
+     16.3.  DKIM Service Type
+     16.4.  HTTP Signature Metadata Parameter
+     16.5.  Mail Transmission Types
+     16.6.  URN Sub-namespace
+     16.7.  HMTP Registry Group
+       16.7.1.  HMTP Capabilities
+       16.7.2.  HMTP Endpoints
+       16.7.3.  HMTP Content Encodings
+       16.7.4.  HMTP Problem Types
+   17. References
+     17.1.  Normative References
+     17.2.  Informative References
    Appendix A.  Examples
      A.1.  Discovery
      A.2.  Transfer with Referenced Content
      A.3.  Submission
      A.4.  Retried Request
      A.5.  Delivery Status Report
+   Acknowledgments
    Author's Address
 
 1.  Introduction
@@ -210,15 +217,6 @@ Table of Contents
 
    This document is motivated by the following properties of SMTP-based
    mail transfer:
-
-   Dependence on IP addresses and port 25:  Receivers commonly make
-      trust decisions based on the IP address of the connecting server.
-      Many cloud and hosting providers restrict outbound connections to
-      port 25, and new senders find it difficult to establish reputation
-      for their addresses.  IP-based reputation also works poorly when
-      many unrelated senders share addresses in cloud environments.  As
-      a result, small operators often have to relay mail through third-
-      party sending services.
 
    Optional transport security:  STARTTLS is negotiated in plaintext and
       can be removed by an active attacker.  Certificate validation is
@@ -279,9 +277,7 @@ Table of Contents
    *  Senders are identified by domain.  Each request is signed using
       HTTP Message Signatures [RFC9421] together with Digest Fields
       [RFC9530], with keys published in DNS in the same way as DKIM
-      keys.  This allows receivers to base trust decisions on domain
-      reputation rather than on IP address reputation, and allows
-      senders to operate behind proxies and content delivery networks.
+      keys.
 
    *  Content may be transferred by reference.  A message, or any part
       of it such as an attachment, may be provided as a URL together
@@ -755,7 +751,7 @@ Table of Contents
    When connecting to the target host, the server or Client MUST
    validate the TLS certificate of the host against the TargetName, as
    described in [RFC9525].  DNS responses SHOULD be validated using
-   DNSSEC [RFC4033] when available.  See Section 13.2 for the
+   DNSSEC [RFC4033] when available.  See Section 14.2 for the
    consequences of an unauthenticated DNS response.
 
    The result of the DNS query is interpreted as follows:
@@ -898,7 +894,7 @@ Table of Contents
          At least one of "transfer" and "submission" MUST be present.
          Additional endpoints MAY be defined by capabilities
          (Section 5.4) and are registered as described in
-         Section 15.7.2.
+         Section 16.7.2.
 
    limits:  OPTIONAL.  A JSON object describing limits of the server.
       All values are non-negative integers.  This document defines the
@@ -1348,7 +1344,7 @@ Table of Contents
    Message has been completely reconstructed and verified.  A server
    MUST NOT make the time of retrieval depend on actions of the
    recipient of the Message, such as opening the Message (see
-   Section 14).
+   Section 15).
 
    The sender of a request MUST keep the content of every Content
    Reference available at its URI until its "expires" timestamp, unless
@@ -1408,7 +1404,7 @@ Table of Contents
    / 3) characters plus 2 octets for each line separator.
 
    Additional encodings can be registered as described in
-   Section 15.7.3.  A sender MUST NOT use an encoding other than
+   Section 16.7.3.  A sender MUST NOT use an encoding other than
    "base64" unless the recipient of the request advertises support for
    it through a capability.
 
@@ -1469,8 +1465,8 @@ Table of Contents
       lowercase ASCII letters, digits, and hyphens, starts with a
       letter, and does not end with a hyphen, for example "future-
       release".  A registered name MUST be registered in the "HMTP
-      Capabilities" registry (Section 15.7.1) before it is used, which
-      requires a publicly available specification (see Section 15).
+      Capabilities" registry (Section 16.7.1) before it is used, which
+      requires a publicly available specification (see Section 16).
       Implementations MUST NOT use a name of this form that is not
       registered.  Registered names are intended for capabilities that
       are meant to be implemented interoperably by independent parties.
@@ -1537,7 +1533,7 @@ Table of Contents
       members defined by the capability for that object.
 
    *  A capability with a registered name that defines a new endpoint
-      registers the endpoint name (Section 15.7.2) and is advertised
+      registers the endpoint name (Section 16.7.2) and is advertised
       with an Endpoint Object in the "endpoints" member of a Version
       Object.  A capability identified by a URI advertises the URIs of
       its endpoints in its own parameters instead.
@@ -1970,13 +1966,13 @@ Table of Contents
    *  The "by" clause contains the host name of the server.
 
    *  The "with" clause contains "HMTP" for a transfer request and
-      "HMTPA" for a submission request (see Section 15.5).
+      "HMTPA" for a submission request (see Section 16.5).
 
    *  The "id" clause, if present, contains the "queueId" of the
       response.
 
    *  The "for" clause SHOULD be included only if the request has a
-      single Envelope Recipient (see Section 14).
+      single Envelope Recipient (see Section 15).
 
    A server MAY also prepend other trace header fields, such as an
    Authentication-Results header field [RFC8601] that records the result
@@ -2201,7 +2197,7 @@ Table of Contents
 
    *  "s" (service type): the record can be used for HMTP only if this
       tag is absent, or if its value includes "*" or "hmtp".  The
-      service type "hmtp" is registered in Section 15.3.
+      service type "hmtp" is registered in Section 16.3.
 
    *  "h" (acceptable hash algorithms): if present for a record of key
       type "rsa", the value MUST include "sha256".
@@ -2214,7 +2210,7 @@ Table of Contents
    A domain SHOULD use a dedicated selector for HMTP with the service
    type "hmtp" only.  Such a key record is ignored by DKIM verifiers,
    which keeps keys for HMTP request signing separate from keys for DKIM
-   message signing (see Section 13.4).  A domain MAY instead use an
+   message signing (see Section 14.4).  A domain MAY instead use an
    existing DKIM key whose record permits all service types; this
    simplifies deployment but forgoes this separation.
 
@@ -2248,7 +2244,7 @@ Table of Contents
       -  "domain" is the Sending Domain, that is, the domain under which
          the key record is published, in A-label form, without a
          trailing dot, for example "example.com".  This parameter is
-         defined in Section 15.4.  If the Envelope Sender is not empty,
+         defined in Section 16.4.  If the Envelope Sender is not empty,
          the Sending Domain MUST be aligned with it as described in
          Section 8.4.
 
@@ -2412,11 +2408,6 @@ Table of Contents
       domain and signs as that domain.  The reputation of the Sending
       Domain then accrues to the provider rather than to its customer.
 
-   Because signatures are not bound to IP addresses, a Sending Server
-   can send requests through any network path, including forward proxies
-   and HTTP intermediaries, provided that the covered components and the
-   content of the request are not modified on the way.
-
 9.  Delivery Status and Errors
 
    HMTP reports failures in two ways: synchronously, through problem
@@ -2435,7 +2426,7 @@ Table of Contents
 
    Problem types defined for HMTP have URIs of the form
    urn:ietf:params:hmtp:error:<name> and are registered as described in
-   Section 15.7.4.  Servers MAY use other problem type URIs as permitted
+   Section 16.7.4.  Servers MAY use other problem type URIs as permitted
    by [RFC9457].
 
    This document defines the following extension members of problem
@@ -2920,7 +2911,7 @@ Table of Contents
    still responds with the status code 204 (No Content), so that the
    reporting server does not retry the report.  Senders that rely on
    reports SHOULD use values of "envid" that cannot be guessed (see
-   Section 13.9).
+   Section 14.9).
 
    The server then makes the information available to the Envelope
    Sender.  If the Envelope Sender is a mailbox that is read with a mail
@@ -3329,11 +3320,6 @@ Table of Contents
       HMTP Endpoint is reliable, because a policy with the mode
       "enforce" prevents delivery over SMTP for its duration.
 
-   Reputation:  Receiving Servers base reputation on the Sending Domain
-      instead of IP addresses.  New Sending Domains still need to
-      establish reputation, and Receiving Servers MAY apply rate limits
-      to Sending Domains without history.
-
    Infrastructure:  HMTP uses standard HTTP infrastructure, including
       load balancers, reverse proxies, and HTTP libraries.  Operators
       need to ensure that intermediaries preserve the components covered
@@ -3351,13 +3337,121 @@ Table of Contents
       use a single queue, because the Message is the same in both
       protocols and only the Envelope representation differs.
 
-12.  Implementation Status
+12.  Abuse and Reputation Considerations
+
+   This document does not define spam filtering or reputation
+   algorithms, which remain a matter of the local policy of each
+   Receiving Server.  This section describes the information that HMTP
+   makes available to such policies and the ways in which features of
+   HMTP can be abused.
+
+12.1.  Information Available to Receivers
+
+   When it evaluates a transfer request, a Receiving Server can use the
+   following information in addition to the content of the Message:
+
+   *  the Sending Domain, authenticated by the signature of the request
+      (Section 8.3), and its alignment with the Envelope Sender
+      (Section 8.4);
+
+   *  the selector of the signing key, which a domain can use to
+      separate different streams of mail, such as transactional and bulk
+      mail, or the mail of different customers of a provider;
+
+   *  the IP address from which the request was received, which
+      identifies an intermediary rather than the Sending Server when the
+      request passes through a proxy;
+
+   *  the results of the DKIM and DMARC evaluation of the Message;
+
+   *  the Envelope, including the Envelope Sender and the number of
+      Envelope Recipients.
+
+   SPF [RFC7208] authorizes hosts to use a domain in SMTP sessions and
+   is not used for HMTP requests, whose sender is authenticated by the
+   signature.  Because a Sending Server can operate behind proxies and
+   content delivery networks, Receiving Servers SHOULD NOT evaluate SPF
+   against the IP address of an HMTP request.  SPF continues to apply to
+   SMTP hops.
+
+12.2.  Reputation of Sending Domains
+
+   A valid signature establishes which domain is responsible for a
+   request.  It does not indicate that the request is legitimate.
+   Domains can be registered at low cost, so an attacker can sign
+   requests with newly registered domains.  Receiving Servers SHOULD
+   therefore treat Sending Domains without history with caution, for
+   example by applying lower rate limits, or by deferring part of their
+   mail with the "rate-limited" or "policy-rejected" problem types and a
+   temporary enhanced status code.
+
+   A Sending Domain is responsible for all Envelope Senders that are
+   aligned with it (Section 8.4), including those in its subdomains, and
+   the reputation earned with such mail applies to the Sending Domain.
+   When a provider signs with its own domain on behalf of its customers
+   (Section 8.5), the reputation accrues to the provider, which is then
+   responsible for abuse by its customers.  When a customer delegates a
+   selector to a provider, the reputation accrues to the domain of the
+   customer.  The restrictions on signatures of registry suffixes
+   described in Section 14 also apply to reputation.
+
+12.3.  Rejection and Backscatter
+
+   Because the Receiving Server reports the result for each Envelope
+   Recipient in its response (Section 6.3), it can reject an unwanted
+   Message during the request.  A Receiving Server SHOULD reject a
+   Message that it does not intend to deliver in its response, rather
+   than accepting it and generating a delivery status notification
+   later.  Later notifications create additional traffic and, for
+   Messages that reached the Receiving Server through a relay, can be
+   sent to an Envelope Sender that did not send the Message.
+
+   The "detail" member of a problem details object for a policy
+   rejection SHOULD allow a legitimate sender to understand the reason
+   for the rejection, but does not need to reveal the internal rules of
+   the filtering system.
+
+12.4.  Abuse of Content References
+
+   An attacker can include Content References to URIs of a third party
+   in many requests and thereby cause Receiving Servers to send
+   retrieval requests to that party.  The checks of size and digest
+   prevent such content from being delivered, but not the retrieval
+   requests themselves.  Receiving Servers SHOULD limit the number and
+   rate of retrievals per Sending Domain and per target host.  Because
+   each request is signed, such abuse can be attributed to the Sending
+   Domain.
+
+   Content References can also be used to deliver malicious content.
+   Because a Message is reconstructed completely before it is delivered
+   (Section 5.2.1), Receiving Servers can apply their content checks to
+   referenced content in the same way as to inline content.
+
+12.5.  Abuse of Submission
+
+   Compromised Client credentials are a common source of abusive mail.
+   Submission Servers SHOULD apply rate limits per account, SHOULD
+   monitor accounts for unusual sending patterns, and SHOULD support
+   bearer tokens with a limited lifetime (Section 7.1).  Because a
+   Submission Server signs the Messages that it relays with keys of its
+   Sending Domain, abuse by its users affects the reputation of that
+   domain.
+
+12.6.  Abuse Reports
+
+   Complaints about abusive Messages, such as reports in the Abuse
+   Reporting Format [RFC5965], are sent as ordinary Messages and are not
+   affected by this document.  Delivery status reports (Section 9.4) are
+   not intended for complaints.  A structured endpoint for abuse reports
+   could be defined as a capability (Section 5.4).
+
+13.  Implementation Status
 
    No implementations are known at the time of writing.
 
-13.  Security Considerations
+14.  Security Considerations
 
-13.1.  Transport Security
+14.1.  Transport Security
 
    All HMTP requests, including the retrieval of the Capabilities
    Document and of referenced content, use TLS with certificate
@@ -3367,7 +3461,7 @@ Table of Contents
    content, as in SMTP.  End-to-end protection requires OpenPGP or S/
    MIME.
 
-13.2.  DNS and Downgrade Attacks
+14.2.  DNS and Downgrade Attacks
 
    The TLS certificate of the HMTP Endpoint is validated against the
    TargetName obtained from DNS.  If DNS responses are not
@@ -3385,7 +3479,7 @@ Table of Contents
    (Section 10.1) prevents an attacker from forcing a downgrade by
    blocking HTTPS connections.
 
-13.3.  Signatures and Replay
+14.3.  Signatures and Replay
 
    Signatures cover the method, the target URI, the media type, and the
    digest of the content, and are therefore bound to the Envelope, the
@@ -3397,7 +3491,7 @@ Table of Contents
    Server to return the stored response instead of delivering the
    Message again.  Verifiers need reasonably accurate clocks.
 
-13.4.  Key Management
+14.4.  Key Management
 
    The security of HMTP depends on the protection of the private keys of
    the Sending Domain.  A compromised key allows an attacker to send
@@ -3413,7 +3507,7 @@ Table of Contents
    keys shorter than 2048 bits, which [RFC8301] still permits for DKIM,
    are not permitted for HMTP.
 
-13.5.  Sender Alignment
+14.5.  Sender Alignment
 
    Alignment permits a domain to sign for its subdomains.  A Receiving
    Server SHOULD NOT accept signatures of domains that are registry
@@ -3426,7 +3520,7 @@ Table of Contents
    Message.  Receiving Servers MUST NOT present the Sending Domain to
    users as the author of the Message.
 
-13.6.  Content References
+14.6.  Content References
 
    Retrieving referenced content causes the Receiving Server to send
    requests to URIs chosen by the sender.  A Receiving Server MUST NOT
@@ -3450,18 +3544,16 @@ Table of Contents
    signed retrieval requests (Section 8.2.1).  Receiving Servers MUST
    NOT disclose these URIs to recipients of the Message.
 
-13.7.  Denial of Service
+14.7.  Denial of Service
 
    HMTP servers are exposed to resource exhaustion through large
    requests, many concurrent requests, slow transmission of requests,
    and Messages with many segments or recipients.  Servers SHOULD
    advertise and enforce limits (Section 4.3), SHOULD apply rate limits
    per Sending Domain and per IP address, and MAY verify the signature
-   before receiving the content of the request.  Because the identity of
-   the sender is established by the signature, rate limits and blocking
-   can be applied per Sending Domain rather than per IP address.
+   before receiving the content of the request.
 
-13.8.  Client Authentication
+14.8.  Client Authentication
 
    Credentials used with the "basic" scheme are passwords and are
    subject to guessing and phishing.  Servers SHOULD support bearer
@@ -3476,7 +3568,7 @@ Table of Contents
    a local relay agreement.  Otherwise, the server would act as an open
    relay.
 
-13.9.  Delivery Status Reports
+14.9.  Delivery Status Reports
 
    A report is authenticated by the domain of the reporting server, but
    that domain is not necessarily related to the Envelope Sender or to
@@ -3492,7 +3584,7 @@ Table of Contents
    all; reports are an improvement in that they identify the reporting
    domain.
 
-13.10.  Transfer Identifiers
+14.10.  Transfer Identifiers
 
    Transfer Identifiers are scoped to the Sending Domain or to the
    authenticated account, so a third party cannot cause a legitimate
@@ -3501,7 +3593,7 @@ Table of Contents
    Identifiers bounds the storage that a Receiving Server needs for
    them.
 
-14.  Privacy Considerations
+15.  Privacy Considerations
 
    HMTP exposes the same information to the servers that handle a
    Message as SMTP does: the Envelope, the Message, and the IP addresses
@@ -3541,9 +3633,9 @@ Table of Contents
    Received header field with a placeholder (Section 6.5) to protect the
    privacy of the user.
 
-15.  IANA Considerations
+16.  IANA Considerations
 
-15.1.  Underscored and Globally Scoped DNS Node Name
+16.1.  Underscored and Globally Scoped DNS Node Name
 
    IANA is requested to add the following entry to the "Underscored and
    Globally Scoped DNS Node Names" registry [RFC8552]:
@@ -3556,7 +3648,7 @@ Table of Contents
 
                                  Table 4
 
-15.2.  Well-Known URI
+16.2.  Well-Known URI
 
    IANA is requested to add the following entry to the "Well-Known URIs"
    registry [RFC8615]:
@@ -3571,7 +3663,7 @@ Table of Contents
 
    Related Information:  None
 
-15.3.  DKIM Service Type
+16.3.  DKIM Service Type
 
    IANA is requested to add the following entry to the "DKIM Service
    Types" registry [RFC6376]:
@@ -3584,7 +3676,7 @@ Table of Contents
 
                                   Table 5
 
-15.4.  HTTP Signature Metadata Parameter
+16.4.  HTTP Signature Metadata Parameter
 
    IANA is requested to add the following entry to the "HTTP Signature
    Metadata Parameters" registry [RFC9421]:
@@ -3597,7 +3689,7 @@ Table of Contents
 
    Reference:  Section 8.2 of RFC XXXX
 
-15.5.  Mail Transmission Types
+16.5.  Mail Transmission Types
 
    IANA is requested to add the following entries to the "Mail
    Transmission Types" registry in the "Mail Parameters" registry group:
@@ -3616,7 +3708,7 @@ Table of Contents
 
                                   Table 6
 
-15.6.  URN Sub-namespace
+16.6.  URN Sub-namespace
 
    IANA is requested to register the following entry in the "IETF URN
    Sub-namespace for Registered Protocol Parameter Identifiers" registry
@@ -3634,7 +3726,7 @@ Table of Contents
    Index value:  The name of a problem type, as registered in the "HMTP
       Problem Types" registry.
 
-15.7.  HMTP Registry Group
+16.7.  HMTP Registry Group
 
    IANA is requested to create a new registry group titled "HTTP Mail
    Transfer Protocol (HMTP)" containing the registries defined in the
@@ -3644,7 +3736,7 @@ Table of Contents
    does not conflict with an existing entry, and that the specification
    is consistent with the extension rules of Section 5.4.
 
-15.7.1.  HMTP Capabilities
+16.7.1.  HMTP Capabilities
 
    The registry contains capabilities with registered names.
    Capabilities identified by URIs are not registered (see
@@ -3664,7 +3756,7 @@ Table of Contents
 
    The registry is initially empty.
 
-15.7.2.  HMTP Endpoints
+16.7.2.  HMTP Endpoints
 
    The registry records the following fields for each endpoint name used
    in the "endpoints" member of a Version Object:
@@ -3693,7 +3785,7 @@ Table of Contents
 
                                   Table 7
 
-15.7.3.  HMTP Content Encodings
+16.7.3.  HMTP Content Encodings
 
    The registry records the following fields for each encoding used in
    the "encoding" member of a Content Reference:
@@ -3715,7 +3807,7 @@ Table of Contents
 
                                   Table 8
 
-15.7.4.  HMTP Problem Types
+16.7.4.  HMTP Problem Types
 
    The registry records the following fields for each problem type:
 
@@ -3735,9 +3827,9 @@ Table of Contents
    The initial contents are the problem types listed in Table 2, each
    with the reference Section 9.2 of RFC XXXX.
 
-16.  References
+17.  References
 
-16.1.  Normative References
+17.1.  Normative References
 
    [RFC2045]  Freed, N. and N. Borenstein, "Multipurpose Internet Mail
               Extensions (MIME) Part One: Format of Internet Message
@@ -3923,7 +4015,7 @@ Table of Contents
               DOI 10.17487/RFC9728, April 2025,
               <https://www.rfc-editor.org/rfc/rfc9728>.
 
-16.2.  Informative References
+17.2.  Informative References
 
    [AWS-SES]  Amazon Web Services, "Amazon Simple Email Service API
               Reference: SendEmail",
@@ -3959,6 +4051,11 @@ Table of Contents
               Extension for Authentication", RFC 4954,
               DOI 10.17487/RFC4954, July 2007,
               <https://www.rfc-editor.org/rfc/rfc4954>.
+
+   [RFC5965]  Shafranovich, Y., Levine, J., and M. Kucherawy, "An
+              Extensible Format for Email Feedback Reports", RFC 5965,
+              DOI 10.17487/RFC5965, August 2010,
+              <https://www.rfc-editor.org/rfc/rfc5965>.
 
    [RFC6522]  Kucherawy, M., Ed., "The Multipart/Report Media Type for
               the Reporting of Mail System Administrative Messages",
@@ -4279,6 +4376,12 @@ A.5.  Delivery Status Report
    the "Status" field "2.0.0", the recipient "bob@example.net" the
    "Status" field "4.2.2", and the "returnedContent" member becomes a
    "text/rfc822-headers" part.
+
+Acknowledgments
+
+   The author thanks John Klensin and John Levine for their comments on
+   an earlier version of this document, in particular on its
+   relationship to SMTP and on related work.
 
 Author's Address
 

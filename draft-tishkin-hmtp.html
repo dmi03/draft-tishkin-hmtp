@@ -16,10 +16,9 @@ notifications, and adds what SMTP provides only through optional
 extensions or not at all.  Security is built in: transport encryption is
 mandatory, and every transfer request is signed on behalf of the sending
 domain, using keys published with the DomainKeys Identified Mail (DKIM)
-key publication mechanism, so that receivers can identify senders
-independently of their IP addresses.  Requests carry identifiers that
-make retries safe, failures are reported per recipient as structured
-problem details with a mapping to SMTP status codes, and extensions are
+key publication mechanism.  Requests carry identifiers that make retries
+safe, failures are reported per recipient as structured problem details
+with a mapping to SMTP status codes, and extensions are
 declared explicitly as capabilities.  Messages are carried unmodified
 inside a JSON envelope, and large messages and attachments can be
 transferred by reference, with their integrity protected by
@@ -1108,10 +1107,9 @@ notifications, and adds what SMTP provides only through optional
 extensions or not at all.  Security is built in: transport encryption is
 mandatory, and every transfer request is signed on behalf of the sending
 domain, using keys published with the DomainKeys Identified Mail (DKIM)
-key publication mechanism, so that receivers can identify senders
-independently of their IP addresses.  Requests carry identifiers that
-make retries safe, failures are reported per recipient as structured
-problem details with a mapping to SMTP status codes, and extensions are
+key publication mechanism.  Requests carry identifiers that make retries
+safe, failures are reported per recipient as structured problem details
+with a mapping to SMTP status codes, and extensions are
 declared explicitly as capabilities.  Messages are carried unmodified
 inside a JSON envelope, and large messages and attachments can be
 transferred by reference, with their integrity protected by
@@ -1401,119 +1399,145 @@ that it can be deployed incrementally alongside existing systems.<a href="#secti
             <p id="section-toc.1-1.11.1"><a href="#section-11" class="auto internal xref">11</a>. <a href="#name-deployment-and-transition-c" class="internal xref">Deployment and Transition Considerations</a></p>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12">
-            <p id="section-toc.1-1.12.1"><a href="#section-12" class="auto internal xref">12</a>. <a href="#name-implementation-status" class="internal xref">Implementation Status</a></p>
-</li>
-          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13">
-            <p id="section-toc.1-1.13.1"><a href="#section-13" class="auto internal xref">13</a>. <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+            <p id="section-toc.1-1.12.1"><a href="#section-12" class="auto internal xref">12</a>. <a href="#name-abuse-and-reputation-consid" class="internal xref">Abuse and Reputation Considerations</a></p>
 <ul class="compact toc ulBare ulEmpty">
-<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13.2.1">
-                <p id="section-toc.1-1.13.2.1.1"><a href="#section-13.1" class="auto internal xref">13.1</a>.  <a href="#name-transport-security" class="internal xref">Transport Security</a></p>
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12.2.1">
+                <p id="section-toc.1-1.12.2.1.1"><a href="#section-12.1" class="auto internal xref">12.1</a>.  <a href="#name-information-available-to-re" class="internal xref">Information Available to Receivers</a></p>
 </li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13.2.2">
-                <p id="section-toc.1-1.13.2.2.1"><a href="#section-13.2" class="auto internal xref">13.2</a>.  <a href="#name-dns-and-downgrade-attacks" class="internal xref">DNS and Downgrade Attacks</a></p>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12.2.2">
+                <p id="section-toc.1-1.12.2.2.1"><a href="#section-12.2" class="auto internal xref">12.2</a>.  <a href="#name-reputation-of-sending-domai" class="internal xref">Reputation of Sending Domains</a></p>
 </li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13.2.3">
-                <p id="section-toc.1-1.13.2.3.1"><a href="#section-13.3" class="auto internal xref">13.3</a>.  <a href="#name-signatures-and-replay" class="internal xref">Signatures and Replay</a></p>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12.2.3">
+                <p id="section-toc.1-1.12.2.3.1"><a href="#section-12.3" class="auto internal xref">12.3</a>.  <a href="#name-rejection-and-backscatter" class="internal xref">Rejection and Backscatter</a></p>
 </li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13.2.4">
-                <p id="section-toc.1-1.13.2.4.1"><a href="#section-13.4" class="auto internal xref">13.4</a>.  <a href="#name-key-management" class="internal xref">Key Management</a></p>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12.2.4">
+                <p id="section-toc.1-1.12.2.4.1"><a href="#section-12.4" class="auto internal xref">12.4</a>.  <a href="#name-abuse-of-content-references" class="internal xref">Abuse of Content References</a></p>
 </li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13.2.5">
-                <p id="section-toc.1-1.13.2.5.1"><a href="#section-13.5" class="auto internal xref">13.5</a>.  <a href="#name-sender-alignment-2" class="internal xref">Sender Alignment</a></p>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12.2.5">
+                <p id="section-toc.1-1.12.2.5.1"><a href="#section-12.5" class="auto internal xref">12.5</a>.  <a href="#name-abuse-of-submission" class="internal xref">Abuse of Submission</a></p>
 </li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13.2.6">
-                <p id="section-toc.1-1.13.2.6.1"><a href="#section-13.6" class="auto internal xref">13.6</a>.  <a href="#name-content-references" class="internal xref">Content References</a></p>
-</li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13.2.7">
-                <p id="section-toc.1-1.13.2.7.1"><a href="#section-13.7" class="auto internal xref">13.7</a>.  <a href="#name-denial-of-service" class="internal xref">Denial of Service</a></p>
-</li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13.2.8">
-                <p id="section-toc.1-1.13.2.8.1"><a href="#section-13.8" class="auto internal xref">13.8</a>.  <a href="#name-client-authentication-2" class="internal xref">Client Authentication</a></p>
-</li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13.2.9">
-                <p id="section-toc.1-1.13.2.9.1"><a href="#section-13.9" class="auto internal xref">13.9</a>.  <a href="#name-delivery-status-reports-2" class="internal xref">Delivery Status Reports</a></p>
-</li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13.2.10">
-                <p id="section-toc.1-1.13.2.10.1"><a href="#section-13.10" class="auto internal xref">13.10</a>. <a href="#name-transfer-identifiers" class="internal xref">Transfer Identifiers</a></p>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12.2.6">
+                <p id="section-toc.1-1.12.2.6.1"><a href="#section-12.6" class="auto internal xref">12.6</a>.  <a href="#name-abuse-reports" class="internal xref">Abuse Reports</a></p>
 </li>
             </ul>
 </li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13">
+            <p id="section-toc.1-1.13.1"><a href="#section-13" class="auto internal xref">13</a>. <a href="#name-implementation-status" class="internal xref">Implementation Status</a></p>
+</li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14">
-            <p id="section-toc.1-1.14.1"><a href="#section-14" class="auto internal xref">14</a>. <a href="#name-privacy-considerations" class="internal xref">Privacy Considerations</a></p>
+            <p id="section-toc.1-1.14.1"><a href="#section-14" class="auto internal xref">14</a>. <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14.2.1">
+                <p id="section-toc.1-1.14.2.1.1"><a href="#section-14.1" class="auto internal xref">14.1</a>.  <a href="#name-transport-security" class="internal xref">Transport Security</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14.2.2">
+                <p id="section-toc.1-1.14.2.2.1"><a href="#section-14.2" class="auto internal xref">14.2</a>.  <a href="#name-dns-and-downgrade-attacks" class="internal xref">DNS and Downgrade Attacks</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14.2.3">
+                <p id="section-toc.1-1.14.2.3.1"><a href="#section-14.3" class="auto internal xref">14.3</a>.  <a href="#name-signatures-and-replay" class="internal xref">Signatures and Replay</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14.2.4">
+                <p id="section-toc.1-1.14.2.4.1"><a href="#section-14.4" class="auto internal xref">14.4</a>.  <a href="#name-key-management" class="internal xref">Key Management</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14.2.5">
+                <p id="section-toc.1-1.14.2.5.1"><a href="#section-14.5" class="auto internal xref">14.5</a>.  <a href="#name-sender-alignment-2" class="internal xref">Sender Alignment</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14.2.6">
+                <p id="section-toc.1-1.14.2.6.1"><a href="#section-14.6" class="auto internal xref">14.6</a>.  <a href="#name-content-references" class="internal xref">Content References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14.2.7">
+                <p id="section-toc.1-1.14.2.7.1"><a href="#section-14.7" class="auto internal xref">14.7</a>.  <a href="#name-denial-of-service" class="internal xref">Denial of Service</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14.2.8">
+                <p id="section-toc.1-1.14.2.8.1"><a href="#section-14.8" class="auto internal xref">14.8</a>.  <a href="#name-client-authentication-2" class="internal xref">Client Authentication</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14.2.9">
+                <p id="section-toc.1-1.14.2.9.1"><a href="#section-14.9" class="auto internal xref">14.9</a>.  <a href="#name-delivery-status-reports-2" class="internal xref">Delivery Status Reports</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14.2.10">
+                <p id="section-toc.1-1.14.2.10.1"><a href="#section-14.10" class="auto internal xref">14.10</a>. <a href="#name-transfer-identifiers" class="internal xref">Transfer Identifiers</a></p>
+</li>
+            </ul>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.15">
-            <p id="section-toc.1-1.15.1"><a href="#section-15" class="auto internal xref">15</a>. <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+            <p id="section-toc.1-1.15.1"><a href="#section-15" class="auto internal xref">15</a>. <a href="#name-privacy-considerations" class="internal xref">Privacy Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.16">
+            <p id="section-toc.1-1.16.1"><a href="#section-16" class="auto internal xref">16</a>. <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
 <ul class="compact toc ulBare ulEmpty">
-<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.15.2.1">
-                <p id="section-toc.1-1.15.2.1.1"><a href="#section-15.1" class="auto internal xref">15.1</a>.  <a href="#name-underscored-and-globally-sc" class="internal xref">Underscored and Globally Scoped DNS Node Name</a></p>
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.16.2.1">
+                <p id="section-toc.1-1.16.2.1.1"><a href="#section-16.1" class="auto internal xref">16.1</a>.  <a href="#name-underscored-and-globally-sc" class="internal xref">Underscored and Globally Scoped DNS Node Name</a></p>
 </li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.15.2.2">
-                <p id="section-toc.1-1.15.2.2.1"><a href="#section-15.2" class="auto internal xref">15.2</a>.  <a href="#name-well-known-uri" class="internal xref">Well-Known URI</a></p>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.16.2.2">
+                <p id="section-toc.1-1.16.2.2.1"><a href="#section-16.2" class="auto internal xref">16.2</a>.  <a href="#name-well-known-uri" class="internal xref">Well-Known URI</a></p>
 </li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.15.2.3">
-                <p id="section-toc.1-1.15.2.3.1"><a href="#section-15.3" class="auto internal xref">15.3</a>.  <a href="#name-dkim-service-type" class="internal xref">DKIM Service Type</a></p>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.16.2.3">
+                <p id="section-toc.1-1.16.2.3.1"><a href="#section-16.3" class="auto internal xref">16.3</a>.  <a href="#name-dkim-service-type" class="internal xref">DKIM Service Type</a></p>
 </li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.15.2.4">
-                <p id="section-toc.1-1.15.2.4.1"><a href="#section-15.4" class="auto internal xref">15.4</a>.  <a href="#name-http-signature-metadata-par" class="internal xref">HTTP Signature Metadata Parameter</a></p>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.16.2.4">
+                <p id="section-toc.1-1.16.2.4.1"><a href="#section-16.4" class="auto internal xref">16.4</a>.  <a href="#name-http-signature-metadata-par" class="internal xref">HTTP Signature Metadata Parameter</a></p>
 </li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.15.2.5">
-                <p id="section-toc.1-1.15.2.5.1"><a href="#section-15.5" class="auto internal xref">15.5</a>.  <a href="#name-mail-transmission-types" class="internal xref">Mail Transmission Types</a></p>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.16.2.5">
+                <p id="section-toc.1-1.16.2.5.1"><a href="#section-16.5" class="auto internal xref">16.5</a>.  <a href="#name-mail-transmission-types" class="internal xref">Mail Transmission Types</a></p>
 </li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.15.2.6">
-                <p id="section-toc.1-1.15.2.6.1"><a href="#section-15.6" class="auto internal xref">15.6</a>.  <a href="#name-urn-sub-namespace" class="internal xref">URN Sub-namespace</a></p>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.16.2.6">
+                <p id="section-toc.1-1.16.2.6.1"><a href="#section-16.6" class="auto internal xref">16.6</a>.  <a href="#name-urn-sub-namespace" class="internal xref">URN Sub-namespace</a></p>
 </li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.15.2.7">
-                <p id="section-toc.1-1.15.2.7.1"><a href="#section-15.7" class="auto internal xref">15.7</a>.  <a href="#name-hmtp-registry-group" class="internal xref">HMTP Registry Group</a></p>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.16.2.7">
+                <p id="section-toc.1-1.16.2.7.1"><a href="#section-16.7" class="auto internal xref">16.7</a>.  <a href="#name-hmtp-registry-group" class="internal xref">HMTP Registry Group</a></p>
 <ul class="compact toc ulBare ulEmpty">
-<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.15.2.7.2.1">
-                    <p id="section-toc.1-1.15.2.7.2.1.1"><a href="#section-15.7.1" class="auto internal xref">15.7.1</a>.  <a href="#name-hmtp-capabilities" class="internal xref">HMTP Capabilities</a></p>
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.16.2.7.2.1">
+                    <p id="section-toc.1-1.16.2.7.2.1.1"><a href="#section-16.7.1" class="auto internal xref">16.7.1</a>.  <a href="#name-hmtp-capabilities" class="internal xref">HMTP Capabilities</a></p>
 </li>
-                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.15.2.7.2.2">
-                    <p id="section-toc.1-1.15.2.7.2.2.1"><a href="#section-15.7.2" class="auto internal xref">15.7.2</a>.  <a href="#name-hmtp-endpoints" class="internal xref">HMTP Endpoints</a></p>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.16.2.7.2.2">
+                    <p id="section-toc.1-1.16.2.7.2.2.1"><a href="#section-16.7.2" class="auto internal xref">16.7.2</a>.  <a href="#name-hmtp-endpoints" class="internal xref">HMTP Endpoints</a></p>
 </li>
-                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.15.2.7.2.3">
-                    <p id="section-toc.1-1.15.2.7.2.3.1"><a href="#section-15.7.3" class="auto internal xref">15.7.3</a>.  <a href="#name-hmtp-content-encodings" class="internal xref">HMTP Content Encodings</a></p>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.16.2.7.2.3">
+                    <p id="section-toc.1-1.16.2.7.2.3.1"><a href="#section-16.7.3" class="auto internal xref">16.7.3</a>.  <a href="#name-hmtp-content-encodings" class="internal xref">HMTP Content Encodings</a></p>
 </li>
-                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.15.2.7.2.4">
-                    <p id="section-toc.1-1.15.2.7.2.4.1"><a href="#section-15.7.4" class="auto internal xref">15.7.4</a>.  <a href="#name-hmtp-problem-types-2" class="internal xref">HMTP Problem Types</a></p>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.16.2.7.2.4">
+                    <p id="section-toc.1-1.16.2.7.2.4.1"><a href="#section-16.7.4" class="auto internal xref">16.7.4</a>.  <a href="#name-hmtp-problem-types-2" class="internal xref">HMTP Problem Types</a></p>
 </li>
                 </ul>
 </li>
             </ul>
 </li>
-          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.16">
-            <p id="section-toc.1-1.16.1"><a href="#section-16" class="auto internal xref">16</a>. <a href="#name-references" class="internal xref">References</a></p>
-<ul class="compact toc ulBare ulEmpty">
-<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.16.2.1">
-                <p id="section-toc.1-1.16.2.1.1"><a href="#section-16.1" class="auto internal xref">16.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
-</li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.16.2.2">
-                <p id="section-toc.1-1.16.2.2.1"><a href="#section-16.2" class="auto internal xref">16.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
-</li>
-            </ul>
-</li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.17">
-            <p id="section-toc.1-1.17.1"><a href="#appendix-A" class="auto internal xref">Appendix A</a>.  <a href="#name-examples" class="internal xref">Examples</a></p>
+            <p id="section-toc.1-1.17.1"><a href="#section-17" class="auto internal xref">17</a>. <a href="#name-references" class="internal xref">References</a></p>
 <ul class="compact toc ulBare ulEmpty">
 <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.17.2.1">
-                <p id="section-toc.1-1.17.2.1.1"><a href="#appendix-A.1" class="auto internal xref">A.1</a>.  <a href="#name-discovery-2" class="internal xref">Discovery</a></p>
+                <p id="section-toc.1-1.17.2.1.1"><a href="#section-17.1" class="auto internal xref">17.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.17.2.2">
-                <p id="section-toc.1-1.17.2.2.1"><a href="#appendix-A.2" class="auto internal xref">A.2</a>.  <a href="#name-transfer-with-referenced-co" class="internal xref">Transfer with Referenced Content</a></p>
-</li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.17.2.3">
-                <p id="section-toc.1-1.17.2.3.1"><a href="#appendix-A.3" class="auto internal xref">A.3</a>.  <a href="#name-submission" class="internal xref">Submission</a></p>
-</li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.17.2.4">
-                <p id="section-toc.1-1.17.2.4.1"><a href="#appendix-A.4" class="auto internal xref">A.4</a>.  <a href="#name-retried-request" class="internal xref">Retried Request</a></p>
-</li>
-              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.17.2.5">
-                <p id="section-toc.1-1.17.2.5.1"><a href="#appendix-A.5" class="auto internal xref">A.5</a>.  <a href="#name-delivery-status-report" class="internal xref">Delivery Status Report</a></p>
+                <p id="section-toc.1-1.17.2.2.1"><a href="#section-17.2" class="auto internal xref">17.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
 </li>
             </ul>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.18">
-            <p id="section-toc.1-1.18.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-authors-address" class="internal xref">Author's Address</a></p>
+            <p id="section-toc.1-1.18.1"><a href="#appendix-A" class="auto internal xref">Appendix A</a>.  <a href="#name-examples" class="internal xref">Examples</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.18.2.1">
+                <p id="section-toc.1-1.18.2.1.1"><a href="#appendix-A.1" class="auto internal xref">A.1</a>.  <a href="#name-discovery-2" class="internal xref">Discovery</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.18.2.2">
+                <p id="section-toc.1-1.18.2.2.1"><a href="#appendix-A.2" class="auto internal xref">A.2</a>.  <a href="#name-transfer-with-referenced-co" class="internal xref">Transfer with Referenced Content</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.18.2.3">
+                <p id="section-toc.1-1.18.2.3.1"><a href="#appendix-A.3" class="auto internal xref">A.3</a>.  <a href="#name-submission" class="internal xref">Submission</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.18.2.4">
+                <p id="section-toc.1-1.18.2.4.1"><a href="#appendix-A.4" class="auto internal xref">A.4</a>.  <a href="#name-retried-request" class="internal xref">Retried Request</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.18.2.5">
+                <p id="section-toc.1-1.18.2.5.1"><a href="#appendix-A.5" class="auto internal xref">A.5</a>.  <a href="#name-delivery-status-report" class="internal xref">Delivery Status Report</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.19">
+            <p id="section-toc.1-1.19.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.20">
+            <p id="section-toc.1-1.20.1"><a href="#appendix-C" class="auto internal xref"></a><a href="#name-authors-address" class="internal xref">Author's Address</a></p>
 </li>
         </ul>
 </nav>
@@ -1556,62 +1580,51 @@ transfer of large content by reference.<a href="#section-1-2" class="pilcrow">¶
 <p id="section-1.1-1">This document is motivated by the following properties of SMTP-based
 mail transfer:<a href="#section-1.1-1" class="pilcrow">¶</a></p>
 <span class="break"></span><dl class="dlParallel" id="section-1.1-2">
-          <dt id="section-1.1-2.1">Dependence on IP addresses and port 25:</dt>
+          <dt id="section-1.1-2.1">Optional transport security:</dt>
           <dd style="margin-left: 1.5em" id="section-1.1-2.2">
-            <p id="section-1.1-2.2.1">Receivers commonly make trust decisions based on the IP address of
-the connecting server.  Many cloud and hosting providers restrict
-outbound connections to port 25, and new senders find it difficult
-to establish reputation for their addresses.  IP-based reputation
-also works poorly when many unrelated senders share addresses in
-cloud environments.  As a result, small operators often have to
-relay mail through third-party sending services.<a href="#section-1.1-2.2.1" class="pilcrow">¶</a></p>
-</dd>
-          <dd class="break"></dd>
-<dt id="section-1.1-2.3">Optional transport security:</dt>
-          <dd style="margin-left: 1.5em" id="section-1.1-2.4">
-            <p id="section-1.1-2.4.1">STARTTLS is negotiated in plaintext and can be removed by an active
+            <p id="section-1.1-2.2.1">STARTTLS is negotiated in plaintext and can be removed by an active
 attacker.  Certificate validation is frequently not performed.
 Additional mechanisms such as MTA-STS and DANE are required to
-prevent downgrade attacks, and they are not universally deployed.<a href="#section-1.1-2.4.1" class="pilcrow">¶</a></p>
+prevent downgrade attacks, and they are not universally deployed.<a href="#section-1.1-2.2.1" class="pilcrow">¶</a></p>
 </dd>
           <dd class="break"></dd>
-<dt id="section-1.1-2.5">Limited error reporting:</dt>
-          <dd style="margin-left: 1.5em" id="section-1.1-2.6">
-            <p id="section-1.1-2.6.1">SMTP reply codes <span>[<a href="#RFC5321" class="cite xref">RFC5321</a>]</span> and enhanced status codes <span>[<a href="#RFC3463" class="cite xref">RFC3463</a>]</span>,
+<dt id="section-1.1-2.3">Limited error reporting:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.1-2.4">
+            <p id="section-1.1-2.4.1">SMTP reply codes <span>[<a href="#RFC5321" class="cite xref">RFC5321</a>]</span> and enhanced status codes <span>[<a href="#RFC3463" class="cite xref">RFC3463</a>]</span>,
 accompanied by free-form text, provide limited structured
 information about why a message was rejected, which makes automated
-handling of failures difficult.<a href="#section-1.1-2.6.1" class="pilcrow">¶</a></p>
+handling of failures difficult.<a href="#section-1.1-2.4.1" class="pilcrow">¶</a></p>
 </dd>
           <dd class="break"></dd>
-<dt id="section-1.1-2.7">Inefficient transfer of large content:</dt>
-          <dd style="margin-left: 1.5em" id="section-1.1-2.8">
-            <p id="section-1.1-2.8.1">All content, including large attachments, is transferred inline
+<dt id="section-1.1-2.5">Inefficient transfer of large content:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.1-2.6">
+            <p id="section-1.1-2.6.1">All content, including large attachments, is transferred inline
 within the message.  The same content is transferred again for
 every receiving domain, and there is no standard way to refer to
-content stored elsewhere with integrity protection.<a href="#section-1.1-2.8.1" class="pilcrow">¶</a></p>
+content stored elsewhere with integrity protection.<a href="#section-1.1-2.6.1" class="pilcrow">¶</a></p>
 </dd>
           <dd class="break"></dd>
-<dt id="section-1.1-2.9">Separate authentication mechanisms:</dt>
-          <dd style="margin-left: 1.5em" id="section-1.1-2.10">
-            <p id="section-1.1-2.10.1">Sender authentication relies on several independent mechanisms
+<dt id="section-1.1-2.7">Separate authentication mechanisms:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.1-2.8">
+            <p id="section-1.1-2.8.1">Sender authentication relies on several independent mechanisms
 (SPF, DKIM, and DMARC) that are evaluated separately and can give
-conflicting results.<a href="#section-1.1-2.10.1" class="pilcrow">¶</a></p>
+conflicting results.<a href="#section-1.1-2.8.1" class="pilcrow">¶</a></p>
 </dd>
           <dd class="break"></dd>
-<dt id="section-1.1-2.11">No protection against duplicate delivery:</dt>
-          <dd style="margin-left: 1.5em" id="section-1.1-2.12">
-            <p id="section-1.1-2.12.1">If the connection is lost after a server has accepted a message
+<dt id="section-1.1-2.9">No protection against duplicate delivery:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.1-2.10">
+            <p id="section-1.1-2.10.1">If the connection is lost after a server has accepted a message
 but before the client has received the reply, the client cannot
 tell whether the message was accepted.  Retrying the transaction
-can result in the message being delivered twice.<a href="#section-1.1-2.12.1" class="pilcrow">¶</a></p>
+can result in the message being delivered twice.<a href="#section-1.1-2.10.1" class="pilcrow">¶</a></p>
 </dd>
           <dd class="break"></dd>
-<dt id="section-1.1-2.13">No standard HTTP interface:</dt>
-          <dd style="margin-left: 1.5em" id="section-1.1-2.14">
-            <p id="section-1.1-2.14.1">Applications increasingly submit mail through HTTP APIs offered by
+<dt id="section-1.1-2.11">No standard HTTP interface:</dt>
+          <dd style="margin-left: 1.5em" id="section-1.1-2.12">
+            <p id="section-1.1-2.12.1">Applications increasingly submit mail through HTTP APIs offered by
 individual products and services.  These APIs are proprietary and
 mutually incompatible, and none of them can be used to transfer mail
-between independent domains.<a href="#section-1.1-2.14.1" class="pilcrow">¶</a></p>
+between independent domains.<a href="#section-1.1-2.12.1" class="pilcrow">¶</a></p>
 </dd>
         <dd class="break"></dd>
 </dl>
@@ -1651,9 +1664,7 @@ copies, mailing lists, and forwarding.<a href="#section-1.2-2.3.1" class="pilcro
             <p id="section-1.2-2.4.1">Senders are identified by domain.  Each request is signed using
 HTTP Message Signatures <span>[<a href="#RFC9421" class="cite xref">RFC9421</a>]</span> together with Digest Fields
 <span>[<a href="#RFC9530" class="cite xref">RFC9530</a>]</span>, with keys published in DNS in the same way as DKIM
-keys.  This allows receivers to base trust decisions on domain
-reputation rather than on IP address reputation, and allows
-senders to operate behind proxies and content delivery networks.<a href="#section-1.2-2.4.1" class="pilcrow">¶</a></p>
+keys.<a href="#section-1.2-2.4.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-1.2-2.5">
             <p id="section-1.2-2.5.1">Content may be transferred by reference.  A message, or any part of it
@@ -2297,7 +2308,7 @@ with the URI of the Capabilities Document of its Submission Server.<a href="#sec
 <p id="section-4.1-8">When connecting to the target host, the server or Client <span class="bcp14">MUST</span>
 validate the TLS certificate of the host against the TargetName, as
 described in <span>[<a href="#RFC9525" class="cite xref">RFC9525</a>]</span>.  DNS responses <span class="bcp14">SHOULD</span> be validated using
-DNSSEC <span>[<a href="#RFC4033" class="cite xref">RFC4033</a>]</span> when available.  See <a href="#security-dns" class="auto internal xref">Section 13.2</a> for the
+DNSSEC <span>[<a href="#RFC4033" class="cite xref">RFC4033</a>]</span> when available.  See <a href="#security-dns" class="auto internal xref">Section 14.2</a> for the
 consequences of an unauthenticated DNS response.<a href="#section-4.1-8" class="pilcrow">¶</a></p>
 <p id="section-4.1-9">The result of the DNS query is interpreted as follows:<a href="#section-4.1-9" class="pilcrow">¶</a></p>
 <ul class="normal">
@@ -2469,7 +2480,7 @@ identities endpoint (<a href="#identities" class="auto internal xref">Section 7.
 <p id="section-4.3-3.2.3.2.3">At least one of "transfer" and "submission" <span class="bcp14">MUST</span> be present.
 Additional endpoints <span class="bcp14">MAY</span> be defined by capabilities
 (<a href="#capabilities" class="auto internal xref">Section 5.4</a>) and are registered as described in
-<a href="#iana-endpoints" class="auto internal xref">Section 15.7.2</a>.<a href="#section-4.3-3.2.3.2.3" class="pilcrow">¶</a></p>
+<a href="#iana-endpoints" class="auto internal xref">Section 16.7.2</a>.<a href="#section-4.3-3.2.3.2.3" class="pilcrow">¶</a></p>
 </dd>
             <dd class="break"></dd>
 </dl>
@@ -3090,7 +3101,7 @@ server <span class="bcp14">MUST NOT</span> deliver a Message to a recipient mail
 Message has been completely reconstructed and verified.  A server
 <span class="bcp14">MUST NOT</span> make the time of retrieval depend on actions of the
 recipient of the Message, such as opening the Message (see
-<a href="#privacy" class="auto internal xref">Section 14</a>).<a href="#section-5.2.1-5" class="pilcrow">¶</a></p>
+<a href="#privacy" class="auto internal xref">Section 15</a>).<a href="#section-5.2.1-5" class="pilcrow">¶</a></p>
 <p id="section-5.2.1-6">The sender of a request <span class="bcp14">MUST</span> keep the content of every Content
 Reference available at its URI until its "expires" timestamp, unless
 every request containing the Content Reference has received a
@@ -3154,7 +3165,7 @@ is the most common practice.  The size of the content produced by
 the "base64" encoding from n octets of representation data is
 4 * ceil(n / 3) characters plus 2 octets for each line separator.<a href="#section-5.3-5" class="pilcrow">¶</a></p>
 <p id="section-5.3-6">Additional encodings can be registered as described in
-<a href="#iana-encodings" class="auto internal xref">Section 15.7.3</a>.  A sender <span class="bcp14">MUST NOT</span> use an encoding other than
+<a href="#iana-encodings" class="auto internal xref">Section 16.7.3</a>.  A sender <span class="bcp14">MUST NOT</span> use an encoding other than
 "base64" unless the recipient of the request advertises support for
 it through a capability.<a href="#section-5.3-6" class="pilcrow">¶</a></p>
 <p id="section-5.3-7">The following example shows a Message with a 700 MiB attachment.  The
@@ -3223,8 +3234,8 @@ forms:<a href="#section-5.4.1-1" class="pilcrow">¶</a></p>
 letters, digits, and hyphens, starts with a letter, and does not
 end with a hyphen, for example "future-release".  A registered name
 <span class="bcp14">MUST</span> be registered in the "HMTP Capabilities" registry
-(<a href="#iana-capabilities" class="auto internal xref">Section 15.7.1</a>) before it is used, which requires a
-publicly available specification (see <a href="#iana" class="auto internal xref">Section 15</a>).  Implementations
+(<a href="#iana-capabilities" class="auto internal xref">Section 16.7.1</a>) before it is used, which requires a
+publicly available specification (see <a href="#iana" class="auto internal xref">Section 16</a>).  Implementations
 <span class="bcp14">MUST NOT</span> use a name of this form that is not registered.
 Registered names are intended for capabilities that are meant to
 be implemented interoperably by independent parties.<a href="#section-5.4.1-2.2.1" class="pilcrow">¶</a></p>
@@ -3306,7 +3317,7 @@ members defined by the capability for that object.<a href="#section-5.4.2-5.2.1"
 </li>
             <li class="normal" id="section-5.4.2-5.3">
               <p id="section-5.4.2-5.3.1">A capability with a registered name that defines a new endpoint
-registers the endpoint name (<a href="#iana-endpoints" class="auto internal xref">Section 15.7.2</a>) and is advertised
+registers the endpoint name (<a href="#iana-endpoints" class="auto internal xref">Section 16.7.2</a>) and is advertised
 with an Endpoint Object in the "endpoints" member of a Version
 Object.  A capability identified by a URI advertises the URIs of
 its endpoints in its own parameters instead.<a href="#section-5.4.2-5.3.1" class="pilcrow">¶</a></p>
@@ -3854,7 +3865,7 @@ Client.<a href="#section-6.5-2.1.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-6.5-2.3">
             <p id="section-6.5-2.3.1">The "with" clause contains "HMTP" for a transfer request and
-"HMTPA" for a submission request (see <a href="#iana-transmission-types" class="auto internal xref">Section 15.5</a>).<a href="#section-6.5-2.3.1" class="pilcrow">¶</a></p>
+"HMTPA" for a submission request (see <a href="#iana-transmission-types" class="auto internal xref">Section 16.5</a>).<a href="#section-6.5-2.3.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-6.5-2.4">
             <p id="section-6.5-2.4.1">The "id" clause, if present, contains the "queueId" of the
@@ -3862,7 +3873,7 @@ response.<a href="#section-6.5-2.4.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-6.5-2.5">
             <p id="section-6.5-2.5.1">The "for" clause <span class="bcp14">SHOULD</span> be included only if the request has a
-single Envelope Recipient (see <a href="#privacy" class="auto internal xref">Section 14</a>).<a href="#section-6.5-2.5.1" class="pilcrow">¶</a></p>
+single Envelope Recipient (see <a href="#privacy" class="auto internal xref">Section 15</a>).<a href="#section-6.5-2.5.1" class="pilcrow">¶</a></p>
 </li>
         </ul>
 <p id="section-6.5-3">A server <span class="bcp14">MAY</span> also prepend other trace header fields, such as an
@@ -4148,7 +4159,7 @@ revoked.  RSA keys <span class="bcp14">MUST</span> have a modulus of at least 20
           <li class="normal" id="section-8.1-4.3">
             <p id="section-8.1-4.3.1">"s" (service type): the record can be used for HMTP only if this
 tag is absent, or if its value includes "*" or "hmtp".  The service
-type "hmtp" is registered in <a href="#iana-dkim" class="auto internal xref">Section 15.3</a>.<a href="#section-8.1-4.3.1" class="pilcrow">¶</a></p>
+type "hmtp" is registered in <a href="#iana-dkim" class="auto internal xref">Section 16.3</a>.<a href="#section-8.1-4.3.1" class="pilcrow">¶</a></p>
 </li>
           <li class="normal" id="section-8.1-4.4">
             <p id="section-8.1-4.4.1">"h" (acceptable hash algorithms): if present for a record of key
@@ -4164,7 +4175,7 @@ differently from an unsigned request, and therefore rejects it.<a href="#section
 <p id="section-8.1-5">A domain <span class="bcp14">SHOULD</span> use a dedicated selector for HMTP with the service
 type "hmtp" only.  Such a key record is ignored by DKIM verifiers,
 which keeps keys for HMTP request signing separate from keys for DKIM
-message signing (see <a href="#security-keys" class="auto internal xref">Section 13.4</a>).  A domain <span class="bcp14">MAY</span> instead use an
+message signing (see <a href="#security-keys" class="auto internal xref">Section 14.4</a>).  A domain <span class="bcp14">MAY</span> instead use an
 existing DKIM key whose record permits all service types; this
 simplifies deployment but forgoes this separation.<a href="#section-8.1-5" class="pilcrow">¶</a></p>
 <p id="section-8.1-6">Signers and verifiers <span class="bcp14">MUST</span> implement both "ed25519" and
@@ -4207,7 +4218,7 @@ field <span class="bcp14">MUST</span> be present in the request, as required in
                 <p id="section-8.2-2.2.2.4.1">"domain" is the Sending Domain, that is, the domain under which
 the key record is published, in A-label form, without a trailing
 dot, for example "example.com".  This parameter is defined in
-<a href="#iana-signature-params" class="auto internal xref">Section 15.4</a>.  If the Envelope Sender is not empty,
+<a href="#iana-signature-params" class="auto internal xref">Section 16.4</a>.  If the Envelope Sender is not empty,
 the Sending Domain <span class="bcp14">MUST</span> be aligned with it as described in
 <a href="#alignment" class="auto internal xref">Section 8.4</a>.<a href="#section-8.2-2.2.2.4.1" class="pilcrow">¶</a></p>
 </li>
@@ -4412,10 +4423,6 @@ the provider rather than to its customer.<a href="#section-8.5-2.6.1" class="pil
 </dd>
         <dd class="break"></dd>
 </dl>
-<p id="section-8.5-3">Because signatures are not bound to IP addresses, a Sending Server
-can send requests through any network path, including forward
-proxies and HTTP intermediaries, provided that the covered components
-and the content of the request are not modified on the way.<a href="#section-8.5-3" class="pilcrow">¶</a></p>
 </section>
 </div>
 </section>
@@ -4442,7 +4449,7 @@ Result Object (<a href="#transfer-response" class="auto internal xref">Section 6
 member <span class="bcp14">MAY</span> be omitted and is ignored if present.<a href="#section-9.1-1" class="pilcrow">¶</a></p>
 <p id="section-9.1-2">Problem types defined for HMTP have URIs of the form
 <code>urn:ietf:params:hmtp:error:&lt;name&gt;</code> and are registered as described
-in <a href="#iana-problem-types" class="auto internal xref">Section 15.7.4</a>.  Servers <span class="bcp14">MAY</span> use other problem type URIs
+in <a href="#iana-problem-types" class="auto internal xref">Section 16.7.4</a>.  Servers <span class="bcp14">MAY</span> use other problem type URIs
 as permitted by <span>[<a href="#RFC9457" class="cite xref">RFC9457</a>]</span>.<a href="#section-9.1-2" class="pilcrow">¶</a></p>
 <p id="section-9.1-3">This document defines the following extension members of problem
 details objects:<a href="#section-9.1-3" class="pilcrow">¶</a></p>
@@ -5239,7 +5246,7 @@ discard a report that it cannot correlate with any Message, but it
 still responds with the status code 204 (No Content), so that the
 reporting server does not retry the report.  Senders that rely on
 reports <span class="bcp14">SHOULD</span> use values of "envid" that cannot be guessed (see
-<a href="#security-reports" class="auto internal xref">Section 13.9</a>).<a href="#section-9.4.3-2" class="pilcrow">¶</a></p>
+<a href="#security-reports" class="auto internal xref">Section 14.9</a>).<a href="#section-9.4.3-2" class="pilcrow">¶</a></p>
 <p id="section-9.4.3-3">The server then makes the information available to the Envelope
 Sender.  If the Envelope Sender is a mailbox that is read with a mail
 client, the server <span class="bcp14">SHOULD</span> convert the report into a DSN message
@@ -5752,96 +5759,225 @@ reliable, because a policy with the mode "enforce" prevents
 delivery over SMTP for its duration.<a href="#section-11-2.6.1" class="pilcrow">¶</a></p>
 </dd>
         <dd class="break"></dd>
-<dt id="section-11-2.7">Reputation:</dt>
+<dt id="section-11-2.7">Infrastructure:</dt>
         <dd style="margin-left: 1.5em" id="section-11-2.8">
-          <p id="section-11-2.8.1">Receiving Servers base reputation on the Sending Domain instead of
-IP addresses.  New Sending Domains still need to establish
-reputation, and Receiving Servers <span class="bcp14">MAY</span> apply rate limits to Sending
-Domains without history.<a href="#section-11-2.8.1" class="pilcrow">¶</a></p>
-</dd>
-        <dd class="break"></dd>
-<dt id="section-11-2.9">Infrastructure:</dt>
-        <dd style="margin-left: 1.5em" id="section-11-2.10">
-          <p id="section-11-2.10.1">HMTP uses standard HTTP infrastructure, including load balancers,
+          <p id="section-11-2.8.1">HMTP uses standard HTTP infrastructure, including load balancers,
 reverse proxies, and HTTP libraries.  Operators need to ensure that
 intermediaries preserve the components covered by signatures
 (<a href="#verification" class="auto internal xref">Section 8.3</a>) and accept request sizes up to the advertised
 "maxRequestSize".  Large content is best transferred by reference,
-so that it can be served from storage optimized for that purpose.<a href="#section-11-2.10.1" class="pilcrow">¶</a></p>
+so that it can be served from storage optimized for that purpose.<a href="#section-11-2.8.1" class="pilcrow">¶</a></p>
 </dd>
         <dd class="break"></dd>
-<dt id="section-11-2.11">Clients:</dt>
-        <dd style="margin-left: 1.5em" id="section-11-2.12">
-          <p id="section-11-2.12.1">Clients locate their Submission Server through discovery or
+<dt id="section-11-2.9">Clients:</dt>
+        <dd style="margin-left: 1.5em" id="section-11-2.10">
+          <p id="section-11-2.10.1">Clients locate their Submission Server through discovery or
 configuration.  Existing SMTP AUTH credentials can be used with the
 "basic" scheme, and Clients can migrate to OAuth 2.0 bearer tokens
-over time.<a href="#section-11-2.12.1" class="pilcrow">¶</a></p>
+over time.<a href="#section-11-2.10.1" class="pilcrow">¶</a></p>
 </dd>
         <dd class="break"></dd>
-<dt id="section-11-2.13">Operating both protocols:</dt>
-        <dd style="margin-left: 1.5em" id="section-11-2.14">
-          <p id="section-11-2.14.1">A server that supports both protocols can use a single queue,
+<dt id="section-11-2.11">Operating both protocols:</dt>
+        <dd style="margin-left: 1.5em" id="section-11-2.12">
+          <p id="section-11-2.12.1">A server that supports both protocols can use a single queue,
 because the Message is the same in both protocols and only the
-Envelope representation differs.<a href="#section-11-2.14.1" class="pilcrow">¶</a></p>
+Envelope representation differs.<a href="#section-11-2.12.1" class="pilcrow">¶</a></p>
 </dd>
       <dd class="break"></dd>
 </dl>
 </section>
 </div>
-<div id="implementation-status">
+<div id="abuse">
 <section id="section-12">
-      <h2 id="name-implementation-status">
-<a href="#section-12" class="section-number selfRef">12. </a><a href="#name-implementation-status" class="section-name selfRef">Implementation Status</a>
+      <h2 id="name-abuse-and-reputation-consid">
+<a href="#section-12" class="section-number selfRef">12. </a><a href="#name-abuse-and-reputation-consid" class="section-name selfRef">Abuse and Reputation Considerations</a>
       </h2>
-<p id="section-12-1">No implementations are known at the time of writing.<a href="#section-12-1" class="pilcrow">¶</a></p>
+<p id="section-12-1">This document does not define spam filtering or reputation
+algorithms, which remain a matter of the local policy of each
+Receiving Server.  This section describes the information that HMTP
+makes available to such policies and the ways in which features of
+HMTP can be abused.<a href="#section-12-1" class="pilcrow">¶</a></p>
+<div id="abuse-information">
+<section id="section-12.1">
+        <h3 id="name-information-available-to-re">
+<a href="#section-12.1" class="section-number selfRef">12.1. </a><a href="#name-information-available-to-re" class="section-name selfRef">Information Available to Receivers</a>
+        </h3>
+<p id="section-12.1-1">When it evaluates a transfer request, a Receiving Server can use the
+following information in addition to the content of the Message:<a href="#section-12.1-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-12.1-2.1">
+            <p id="section-12.1-2.1.1">the Sending Domain, authenticated by the signature of the request
+(<a href="#verification" class="auto internal xref">Section 8.3</a>), and its alignment with the Envelope Sender
+(<a href="#alignment" class="auto internal xref">Section 8.4</a>);<a href="#section-12.1-2.1.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-12.1-2.2">
+            <p id="section-12.1-2.2.1">the selector of the signing key, which a domain can use to separate
+different streams of mail, such as transactional and bulk mail, or
+the mail of different customers of a provider;<a href="#section-12.1-2.2.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-12.1-2.3">
+            <p id="section-12.1-2.3.1">the IP address from which the request was received, which
+identifies an intermediary rather than the Sending Server
+when the request passes through a proxy;<a href="#section-12.1-2.3.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-12.1-2.4">
+            <p id="section-12.1-2.4.1">the results of the DKIM and DMARC evaluation of the Message;<a href="#section-12.1-2.4.1" class="pilcrow">¶</a></p>
+</li>
+          <li class="normal" id="section-12.1-2.5">
+            <p id="section-12.1-2.5.1">the Envelope, including the Envelope Sender and the number of
+Envelope Recipients.<a href="#section-12.1-2.5.1" class="pilcrow">¶</a></p>
+</li>
+        </ul>
+<p id="section-12.1-3">SPF <span>[<a href="#RFC7208" class="cite xref">RFC7208</a>]</span> authorizes hosts to use a domain in SMTP sessions and
+is not used for HMTP requests, whose sender is authenticated by the
+signature.  Because a Sending Server can operate behind proxies and
+content delivery networks, Receiving Servers <span class="bcp14">SHOULD NOT</span> evaluate SPF
+against the IP address of an HMTP request.  SPF continues to apply to SMTP hops.<a href="#section-12.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="abuse-reputation">
+<section id="section-12.2">
+        <h3 id="name-reputation-of-sending-domai">
+<a href="#section-12.2" class="section-number selfRef">12.2. </a><a href="#name-reputation-of-sending-domai" class="section-name selfRef">Reputation of Sending Domains</a>
+        </h3>
+<p id="section-12.2-1">A valid signature establishes which domain is responsible for a
+request.  It does not indicate that the request is legitimate.
+Domains can be registered at low cost, so an attacker can sign
+requests with newly registered domains.  Receiving Servers <span class="bcp14">SHOULD</span>
+therefore treat Sending Domains without history with caution, for
+example by applying lower rate limits, or by deferring part of their
+mail with the "rate-limited" or "policy-rejected" problem types and a
+temporary enhanced status code.<a href="#section-12.2-1" class="pilcrow">¶</a></p>
+<p id="section-12.2-2">A Sending Domain is responsible for all Envelope Senders that are
+aligned with it (<a href="#alignment" class="auto internal xref">Section 8.4</a>), including those in its subdomains, and
+the reputation earned with such mail applies to the Sending Domain.
+When a provider signs with its own domain on behalf of its customers
+(<a href="#third-party" class="auto internal xref">Section 8.5</a>), the reputation accrues to the provider, which is
+then responsible for abuse by its customers.  When a customer
+delegates a selector to a provider, the reputation accrues to the
+domain of the customer.  The restrictions on signatures of registry
+suffixes described in <a href="#security" class="auto internal xref">Section 14</a> also apply to reputation.<a href="#section-12.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="abuse-rejection">
+<section id="section-12.3">
+        <h3 id="name-rejection-and-backscatter">
+<a href="#section-12.3" class="section-number selfRef">12.3. </a><a href="#name-rejection-and-backscatter" class="section-name selfRef">Rejection and Backscatter</a>
+        </h3>
+<p id="section-12.3-1">Because the Receiving Server reports the result for each Envelope
+Recipient in its response (<a href="#transfer-response" class="auto internal xref">Section 6.3</a>), it can reject an
+unwanted Message during the request.  A Receiving Server <span class="bcp14">SHOULD</span>
+reject a Message that it does not intend to deliver in its response,
+rather than accepting it and generating a delivery status
+notification later.  Later notifications create additional traffic
+and, for Messages that reached the Receiving Server through a relay,
+can be sent to an Envelope Sender that did not send the Message.<a href="#section-12.3-1" class="pilcrow">¶</a></p>
+<p id="section-12.3-2">The "detail" member of a problem details object for a policy
+rejection <span class="bcp14">SHOULD</span> allow a legitimate sender to understand the reason
+for the rejection, but does not need to reveal the internal rules of
+the filtering system.<a href="#section-12.3-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="abuse-references">
+<section id="section-12.4">
+        <h3 id="name-abuse-of-content-references">
+<a href="#section-12.4" class="section-number selfRef">12.4. </a><a href="#name-abuse-of-content-references" class="section-name selfRef">Abuse of Content References</a>
+        </h3>
+<p id="section-12.4-1">An attacker can include Content References to URIs of a third party in
+many requests and thereby cause Receiving Servers to send retrieval
+requests to that party.  The checks of size and digest prevent such
+content from being delivered, but not the retrieval requests
+themselves.  Receiving Servers <span class="bcp14">SHOULD</span> limit the number and rate of
+retrievals per Sending Domain and per target host.  Because each
+request is signed, such abuse can be attributed to the Sending Domain.<a href="#section-12.4-1" class="pilcrow">¶</a></p>
+<p id="section-12.4-2">Content References can also be used to deliver malicious content.
+Because a Message is reconstructed completely before it is delivered
+(<a href="#reference-retrieval" class="auto internal xref">Section 5.2.1</a>), Receiving Servers can apply their content
+checks to referenced content in the same way as to inline content.<a href="#section-12.4-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="abuse-submission">
+<section id="section-12.5">
+        <h3 id="name-abuse-of-submission">
+<a href="#section-12.5" class="section-number selfRef">12.5. </a><a href="#name-abuse-of-submission" class="section-name selfRef">Abuse of Submission</a>
+        </h3>
+<p id="section-12.5-1">Compromised Client credentials are a common source of abusive mail.
+Submission Servers <span class="bcp14">SHOULD</span> apply rate limits per account, <span class="bcp14">SHOULD</span>
+monitor accounts for unusual sending patterns, and <span class="bcp14">SHOULD</span> support
+bearer tokens with a limited lifetime (<a href="#client-authentication" class="auto internal xref">Section 7.1</a>).
+Because a Submission Server signs the Messages that it relays with
+keys of its Sending Domain, abuse by its users affects the reputation
+of that domain.<a href="#section-12.5-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="abuse-reports">
+<section id="section-12.6">
+        <h3 id="name-abuse-reports">
+<a href="#section-12.6" class="section-number selfRef">12.6. </a><a href="#name-abuse-reports" class="section-name selfRef">Abuse Reports</a>
+        </h3>
+<p id="section-12.6-1">Complaints about abusive Messages, such as reports in the Abuse
+Reporting Format <span>[<a href="#RFC5965" class="cite xref">RFC5965</a>]</span>, are sent as ordinary Messages and are not
+affected by this document.  Delivery status reports (<a href="#reports" class="auto internal xref">Section 9.4</a>) are
+not intended for complaints.  A structured endpoint for abuse reports
+could be defined as a capability (<a href="#capabilities" class="auto internal xref">Section 5.4</a>).<a href="#section-12.6-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="implementation-status">
+<section id="section-13">
+      <h2 id="name-implementation-status">
+<a href="#section-13" class="section-number selfRef">13. </a><a href="#name-implementation-status" class="section-name selfRef">Implementation Status</a>
+      </h2>
+<p id="section-13-1">No implementations are known at the time of writing.<a href="#section-13-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="security">
-<section id="section-13">
+<section id="section-14">
       <h2 id="name-security-considerations">
-<a href="#section-13" class="section-number selfRef">13. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+<a href="#section-14" class="section-number selfRef">14. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
       </h2>
 <div id="transport-security">
-<section id="section-13.1">
+<section id="section-14.1">
         <h3 id="name-transport-security">
-<a href="#section-13.1" class="section-number selfRef">13.1. </a><a href="#name-transport-security" class="section-name selfRef">Transport Security</a>
+<a href="#section-14.1" class="section-number selfRef">14.1. </a><a href="#name-transport-security" class="section-name selfRef">Transport Security</a>
         </h3>
-<p id="section-13.1-1">All HMTP requests, including the retrieval of the Capabilities
+<p id="section-14.1-1">All HMTP requests, including the retrieval of the Capabilities
 Document and of referenced content, use TLS with certificate
 validation.  No plaintext mode exists.  TLS protects the
 confidentiality and integrity of each hop, but not of the Message
 end to end: every server that handles a Message has access to its
 content, as in SMTP.  End-to-end protection requires OpenPGP or
-S/MIME.<a href="#section-13.1-1" class="pilcrow">¶</a></p>
+S/MIME.<a href="#section-14.1-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="security-dns">
-<section id="section-13.2">
+<section id="section-14.2">
         <h3 id="name-dns-and-downgrade-attacks">
-<a href="#section-13.2" class="section-number selfRef">13.2. </a><a href="#name-dns-and-downgrade-attacks" class="section-name selfRef">DNS and Downgrade Attacks</a>
+<a href="#section-14.2" class="section-number selfRef">14.2. </a><a href="#name-dns-and-downgrade-attacks" class="section-name selfRef">DNS and Downgrade Attacks</a>
         </h3>
-<p id="section-13.2-1">The TLS certificate of the HMTP Endpoint is validated against the
+<p id="section-14.2-1">The TLS certificate of the HMTP Endpoint is validated against the
 TargetName obtained from DNS.  If DNS responses are not authenticated,
 an attacker who can modify them can redirect HMTP requests to a host
 under its control, for which it can obtain a valid certificate, or can
 remove the SVCB records so that a Sending Server falls back to SMTP.
 This is the same exposure that MX records have without DNSSEC.
 Domains <span class="bcp14">SHOULD</span> sign their zones with DNSSEC, and Sending Servers
-<span class="bcp14">SHOULD</span> validate DNS responses.<a href="#section-13.2-1" class="pilcrow">¶</a></p>
-<p id="section-13.2-2">The downgrade policy (<a href="#policy" class="auto internal xref">Section 10.2</a>) protects against the removal of
+<span class="bcp14">SHOULD</span> validate DNS responses.<a href="#section-14.2-1" class="pilcrow">¶</a></p>
+<p id="section-14.2-2">The downgrade policy (<a href="#policy" class="auto internal xref">Section 10.2</a>) protects against the removal of
 SVCB records after a Sending Server has reached a domain once, but
 not on first contact and not against redirection to another host.
 The rule that temporary failures never cause a fallback to SMTP
 (<a href="#when-to-fall-back" class="auto internal xref">Section 10.1</a>) prevents an attacker from forcing a downgrade
-by blocking HTTPS connections.<a href="#section-13.2-2" class="pilcrow">¶</a></p>
+by blocking HTTPS connections.<a href="#section-14.2-2" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="security-replay">
-<section id="section-13.3">
+<section id="section-14.3">
         <h3 id="name-signatures-and-replay">
-<a href="#section-13.3" class="section-number selfRef">13.3. </a><a href="#name-signatures-and-replay" class="section-name selfRef">Signatures and Replay</a>
+<a href="#section-14.3" class="section-number selfRef">14.3. </a><a href="#name-signatures-and-replay" class="section-name selfRef">Signatures and Replay</a>
         </h3>
-<p id="section-13.3-1">Signatures cover the method, the target URI, the media type, and the
+<p id="section-14.3-1">Signatures cover the method, the target URI, the media type, and the
 digest of the content, and are therefore bound to the Envelope, the
 Message, and the Receiving Server.  A captured request cannot be
 replayed to another Receiving Server, because the target URI differs.
@@ -5849,111 +5985,108 @@ A replay to the same Receiving Server is limited by the validity
 period of the signature, which is at most 300 seconds, and within that
 period by the Transfer Identifier, which causes the Receiving Server
 to return the stored response instead of delivering the Message again.
-Verifiers need reasonably accurate clocks.<a href="#section-13.3-1" class="pilcrow">¶</a></p>
+Verifiers need reasonably accurate clocks.<a href="#section-14.3-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="security-keys">
-<section id="section-13.4">
+<section id="section-14.4">
         <h3 id="name-key-management">
-<a href="#section-13.4" class="section-number selfRef">13.4. </a><a href="#name-key-management" class="section-name selfRef">Key Management</a>
+<a href="#section-14.4" class="section-number selfRef">14.4. </a><a href="#name-key-management" class="section-name selfRef">Key Management</a>
         </h3>
-<p id="section-13.4-1">The security of HMTP depends on the protection of the private keys of
+<p id="section-14.4-1">The security of HMTP depends on the protection of the private keys of
 the Sending Domain.  A compromised key allows an attacker to send
 requests on behalf of the domain until the key record is revoked.
 Domains <span class="bcp14">SHOULD</span> rotate keys regularly as described in
-<a href="#signing-keys" class="auto internal xref">Section 8.1</a>.<a href="#section-13.4-1" class="pilcrow">¶</a></p>
-<p id="section-13.4-2">When a key is shared between DKIM message signing and HMTP request
+<a href="#signing-keys" class="auto internal xref">Section 8.1</a>.<a href="#section-14.4-1" class="pilcrow">¶</a></p>
+<p id="section-14.4-2">When a key is shared between DKIM message signing and HMTP request
 signing, a compromise affects both uses.  The data that HMTP signs,
 the signature base defined by <span>[<a href="#RFC9421" class="cite xref">RFC9421</a>]</span>, has a different structure
 from the data signed by DKIM, which makes it difficult to use a
 signature from one protocol in the other.  Nevertheless, keys
 dedicated to HMTP with the service type "hmtp" are <span class="bcp14">RECOMMENDED</span>.  RSA
 keys shorter than 2048 bits, which <span>[<a href="#RFC8301" class="cite xref">RFC8301</a>]</span> still permits for
-DKIM, are not permitted for HMTP.<a href="#section-13.4-2" class="pilcrow">¶</a></p>
+DKIM, are not permitted for HMTP.<a href="#section-14.4-2" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="sender-alignment">
-<section id="section-13.5">
+<section id="section-14.5">
         <h3 id="name-sender-alignment-2">
-<a href="#section-13.5" class="section-number selfRef">13.5. </a><a href="#name-sender-alignment-2" class="section-name selfRef">Sender Alignment</a>
+<a href="#section-14.5" class="section-number selfRef">14.5. </a><a href="#name-sender-alignment-2" class="section-name selfRef">Sender Alignment</a>
         </h3>
-<p id="section-13.5-1">Alignment permits a domain to sign for its subdomains.  A Receiving
+<p id="section-14.5-1">Alignment permits a domain to sign for its subdomains.  A Receiving
 Server <span class="bcp14">SHOULD NOT</span> accept signatures of domains that are registry
 suffixes, such as top-level domains, as authenticating the Envelope
 Sender, because such domains do not operate mail services for the
-domains registered under them.<a href="#section-13.5-1" class="pilcrow">¶</a></p>
-<p id="section-13.5-2">An HMTP signature authenticates the Sending Domain and its alignment
+domains registered under them.<a href="#section-14.5-1" class="pilcrow">¶</a></p>
+<p id="section-14.5-2">An HMTP signature authenticates the Sending Domain and its alignment
 with the Envelope Sender.  It does not authenticate the author of the
 Message.  Receiving Servers <span class="bcp14">MUST NOT</span> present the Sending Domain to
-users as the author of the Message.<a href="#section-13.5-2" class="pilcrow">¶</a></p>
+users as the author of the Message.<a href="#section-14.5-2" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="content-references">
-<section id="section-13.6">
+<section id="section-14.6">
         <h3 id="name-content-references">
-<a href="#section-13.6" class="section-number selfRef">13.6. </a><a href="#name-content-references" class="section-name selfRef">Content References</a>
+<a href="#section-14.6" class="section-number selfRef">14.6. </a><a href="#name-content-references" class="section-name selfRef">Content References</a>
         </h3>
-<p id="section-13.6-1">Retrieving referenced content causes the Receiving Server to send
+<p id="section-14.6-1">Retrieving referenced content causes the Receiving Server to send
 requests to URIs chosen by the sender.  A Receiving Server <span class="bcp14">MUST NOT</span>
 retrieve content from IP addresses that are not globally routable,
 such as loopback, private, and link-local addresses, unless it is
 explicitly configured to do so, in order to prevent attacks on
 internal services.  It <span class="bcp14">SHOULD</span> apply limits to the number of
 redirections, the duration of retrievals, and the number of
-concurrent retrievals per Sending Domain.<a href="#section-13.6-1" class="pilcrow">¶</a></p>
-<p id="section-13.6-2">The integrity of referenced content is protected by its digest, which
+concurrent retrievals per Sending Domain.<a href="#section-14.6-1" class="pilcrow">¶</a></p>
+<p id="section-14.6-2">The integrity of referenced content is protected by its digest, which
 is covered by the signature of the request.  The size of referenced
 content is declared in advance, so a Receiving Server can reject
 oversized Messages before retrieving them and can stop a retrieval
-that exceeds the declared size.<a href="#section-13.6-2" class="pilcrow">¶</a></p>
-<p id="section-13.6-3">URIs of referenced content act as bearer capabilities: anyone who
+that exceeds the declared size.<a href="#section-14.6-2" class="pilcrow">¶</a></p>
+<p id="section-14.6-3">URIs of referenced content act as bearer capabilities: anyone who
 learns them can retrieve the content until it is removed.  Senders
 <span class="bcp14">SHOULD</span> use URIs that contain sufficient randomness to be unguessable,
 <span class="bcp14">SHOULD</span> remove content after its "expires" timestamp, and <span class="bcp14">MAY</span> require
 signed retrieval requests (<a href="#retrieval-signing" class="auto internal xref">Section 8.2.1</a>).  Receiving Servers
-<span class="bcp14">MUST NOT</span> disclose these URIs to recipients of the Message.<a href="#section-13.6-3" class="pilcrow">¶</a></p>
+<span class="bcp14">MUST NOT</span> disclose these URIs to recipients of the Message.<a href="#section-14.6-3" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="denial-of-service">
-<section id="section-13.7">
+<section id="section-14.7">
         <h3 id="name-denial-of-service">
-<a href="#section-13.7" class="section-number selfRef">13.7. </a><a href="#name-denial-of-service" class="section-name selfRef">Denial of Service</a>
+<a href="#section-14.7" class="section-number selfRef">14.7. </a><a href="#name-denial-of-service" class="section-name selfRef">Denial of Service</a>
         </h3>
-<p id="section-13.7-1">HMTP servers are exposed to resource exhaustion through large
+<p id="section-14.7-1">HMTP servers are exposed to resource exhaustion through large
 requests, many concurrent requests, slow transmission of requests,
 and Messages with many segments or recipients.  Servers <span class="bcp14">SHOULD</span>
 advertise and enforce limits (<a href="#capabilities-document" class="auto internal xref">Section 4.3</a>), <span class="bcp14">SHOULD</span>
 apply rate limits per Sending Domain and per IP address, and <span class="bcp14">MAY</span>
-verify the signature before receiving the content of the request.
-Because the identity of the sender is established by the signature,
-rate limits and blocking can be applied per Sending Domain rather
-than per IP address.<a href="#section-13.7-1" class="pilcrow">¶</a></p>
+verify the signature before receiving the content of the request.<a href="#section-14.7-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="security-client-authentication">
-<section id="section-13.8">
+<section id="section-14.8">
         <h3 id="name-client-authentication-2">
-<a href="#section-13.8" class="section-number selfRef">13.8. </a><a href="#name-client-authentication-2" class="section-name selfRef">Client Authentication</a>
+<a href="#section-14.8" class="section-number selfRef">14.8. </a><a href="#name-client-authentication-2" class="section-name selfRef">Client Authentication</a>
         </h3>
-<p id="section-13.8-1">Credentials used with the "basic" scheme are passwords and are subject
+<p id="section-14.8-1">Credentials used with the "basic" scheme are passwords and are subject
 to guessing and phishing.  Servers <span class="bcp14">SHOULD</span> support bearer tokens,
 <span class="bcp14">SHOULD</span> support application-specific passwords for the "basic" scheme,
 and <span class="bcp14">SHOULD</span> limit the rate of failed attempts.  Bearer tokens <span class="bcp14">SHOULD</span> be
 restricted to the Submission Server as their audience, and Clients
-<span class="bcp14">MUST NOT</span> send them to other servers.<a href="#section-13.8-1" class="pilcrow">¶</a></p>
-<p id="section-13.8-2">A Submission Server <span class="bcp14">MUST</span> authenticate every submission request and
+<span class="bcp14">MUST NOT</span> send them to other servers.<a href="#section-14.8-1" class="pilcrow">¶</a></p>
+<p id="section-14.8-2">A Submission Server <span class="bcp14">MUST</span> authenticate every submission request and
 <span class="bcp14">MUST</span> verify the sender addresses (<a href="#sender-authorization" class="auto internal xref">Section 7.2</a>).  A
 transfer endpoint <span class="bcp14">MUST NOT</span> accept Messages for domains it does not
 serve, except under a local relay agreement.  Otherwise, the server
-would act as an open relay.<a href="#section-13.8-2" class="pilcrow">¶</a></p>
+would act as an open relay.<a href="#section-14.8-2" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="security-reports">
-<section id="section-13.9">
+<section id="section-14.9">
         <h3 id="name-delivery-status-reports-2">
-<a href="#section-13.9" class="section-number selfRef">13.9. </a><a href="#name-delivery-status-reports-2" class="section-name selfRef">Delivery Status Reports</a>
+<a href="#section-14.9" class="section-number selfRef">14.9. </a><a href="#name-delivery-status-reports-2" class="section-name selfRef">Delivery Status Reports</a>
         </h3>
-<p id="section-13.9-1">A report is authenticated by the domain of the reporting server, but
+<p id="section-14.9-1">A report is authenticated by the domain of the reporting server, but
 that domain is not necessarily related to the Envelope Sender or to
 the Envelope Recipients, because a Message can pass through servers of
 several domains.  An attacker can therefore send forged reports about
@@ -5965,74 +6098,74 @@ automatically <span class="bcp14">SHOULD</span> use unguessable values of "envid
 servers that have handled the Message can produce a matching report.
 The same considerations apply to DSN messages, which are not
 authenticated at all; reports are an improvement in that they identify
-the reporting domain.<a href="#section-13.9-1" class="pilcrow">¶</a></p>
+the reporting domain.<a href="#section-14.9-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="transfer-identifiers">
-<section id="section-13.10">
+<section id="section-14.10">
         <h3 id="name-transfer-identifiers">
-<a href="#section-13.10" class="section-number selfRef">13.10. </a><a href="#name-transfer-identifiers" class="section-name selfRef">Transfer Identifiers</a>
+<a href="#section-14.10" class="section-number selfRef">14.10. </a><a href="#name-transfer-identifiers" class="section-name selfRef">Transfer Identifiers</a>
         </h3>
-<p id="section-13.10-1">Transfer Identifiers are scoped to the Sending Domain or to the
+<p id="section-14.10-1">Transfer Identifiers are scoped to the Sending Domain or to the
 authenticated account, so a third party cannot cause a legitimate
 request to be suppressed as a duplicate without being able to sign
 requests for the same scope.  The limit on the length of Transfer
-Identifiers bounds the storage that a Receiving Server needs for them.<a href="#section-13.10-1" class="pilcrow">¶</a></p>
+Identifiers bounds the storage that a Receiving Server needs for them.<a href="#section-14.10-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 </section>
 </div>
 <div id="privacy">
-<section id="section-14">
+<section id="section-15">
       <h2 id="name-privacy-considerations">
-<a href="#section-14" class="section-number selfRef">14. </a><a href="#name-privacy-considerations" class="section-name selfRef">Privacy Considerations</a>
+<a href="#section-15" class="section-number selfRef">15. </a><a href="#name-privacy-considerations" class="section-name selfRef">Privacy Considerations</a>
       </h2>
-<p id="section-14-1">HMTP exposes the same information to the servers that handle a
+<p id="section-15-1">HMTP exposes the same information to the servers that handle a
 Message as SMTP does: the Envelope, the Message, and the IP addresses
 of the communicating servers.  TLS protects this information from
 observers on the network.  The name of the HMTP Endpoint is visible in
 the TLS handshake unless Encrypted Client Hello is used, and DNS
 queries for SVCB records reveal the domains with which a server
-exchanges mail unless encrypted DNS transports are used.<a href="#section-14-1" class="pilcrow">¶</a></p>
-<p id="section-14-2">An HMTP request contains all Envelope Recipients that are served by
+exchanges mail unless encrypted DNS transports are used.<a href="#section-15-1" class="pilcrow">¶</a></p>
+<p id="section-15-2">An HMTP request contains all Envelope Recipients that are served by
 the same HMTP Endpoint.  As in SMTP, the Receiving Server learns all
 of them, including recipients that are not visible in the header
 fields of the Message, such as blind carbon copy recipients.
 Receiving Servers <span class="bcp14">MUST NOT</span> disclose the list of Envelope Recipients to
 recipients of the Message, and include the "for" clause in Received
-header fields only for single recipients (<a href="#trace" class="auto internal xref">Section 6.5</a>).<a href="#section-14-2" class="pilcrow">¶</a></p>
-<p id="section-14-3">The retrieval of referenced content reveals to the server that hosts
+header fields only for single recipients (<a href="#trace" class="auto internal xref">Section 6.5</a>).<a href="#section-15-2" class="pilcrow">¶</a></p>
+<p id="section-15-3">The retrieval of referenced content reveals to the server that hosts
 the content which Receiving Servers retrieve it and when.  Because
 retrieval is performed by the Receiving Server and is not triggered
 by actions of the recipient (<a href="#reference-retrieval" class="auto internal xref">Section 5.2.1</a>), it does not
 reveal whether or when the recipient reads the Message.  Senders can
 still learn which Receiving Servers serve the recipients, which they
-can also learn from DNS.<a href="#section-14-3" class="pilcrow">¶</a></p>
-<p id="section-14-4">The identities endpoint reveals the addresses of an account only to
+can also learn from DNS.<a href="#section-15-3" class="pilcrow">¶</a></p>
+<p id="section-15-4">The identities endpoint reveals the addresses of an account only to
 the authenticated Client.  The Capabilities Document is public and
 reveals the endpoints and limits of the host, and implicitly the
-provider that serves a domain, which can also be learned from DNS.<a href="#section-14-4" class="pilcrow">¶</a></p>
-<p id="section-14-5">Receiving Servers store Transfer Identifiers together with a hash of
+provider that serves a domain, which can also be learned from DNS.<a href="#section-15-4" class="pilcrow">¶</a></p>
+<p id="section-15-5">Receiving Servers store Transfer Identifiers together with a hash of
 the request content and the response.  This information <span class="bcp14">SHOULD NOT</span> be
 retained longer than needed for the purposes described in
-<a href="#idempotency" class="auto internal xref">Section 6.4</a>.<a href="#section-14-5" class="pilcrow">¶</a></p>
-<p id="section-14-6">Submission Servers <span class="bcp14">MAY</span> replace the IP address of the Client in the
+<a href="#idempotency" class="auto internal xref">Section 6.4</a>.<a href="#section-15-5" class="pilcrow">¶</a></p>
+<p id="section-15-6">Submission Servers <span class="bcp14">MAY</span> replace the IP address of the Client in the
 Received header field with a placeholder (<a href="#trace" class="auto internal xref">Section 6.5</a>) to protect the
-privacy of the user.<a href="#section-14-6" class="pilcrow">¶</a></p>
+privacy of the user.<a href="#section-15-6" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="iana">
-<section id="section-15">
+<section id="section-16">
       <h2 id="name-iana-considerations">
-<a href="#section-15" class="section-number selfRef">15. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+<a href="#section-16" class="section-number selfRef">16. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
       </h2>
 <div id="underscored-and-globally-scoped-dns-node-name">
-<section id="section-15.1">
+<section id="section-16.1">
         <h3 id="name-underscored-and-globally-sc">
-<a href="#section-15.1" class="section-number selfRef">15.1. </a><a href="#name-underscored-and-globally-sc" class="section-name selfRef">Underscored and Globally Scoped DNS Node Name</a>
+<a href="#section-16.1" class="section-number selfRef">16.1. </a><a href="#name-underscored-and-globally-sc" class="section-name selfRef">Underscored and Globally Scoped DNS Node Name</a>
         </h3>
-<p id="section-15.1-1">IANA is requested to add the following entry to the "Underscored and
-Globally Scoped DNS Node Names" registry <span>[<a href="#RFC8552" class="cite xref">RFC8552</a>]</span>:<a href="#section-15.1-1" class="pilcrow">¶</a></p>
+<p id="section-16.1-1">IANA is requested to add the following entry to the "Underscored and
+Globally Scoped DNS Node Names" registry <span>[<a href="#RFC8552" class="cite xref">RFC8552</a>]</span>:<a href="#section-16.1-1" class="pilcrow">¶</a></p>
 <table class="center" id="table-4">
           <caption><a href="#table-4" class="selfRef">Table 4</a></caption>
 <thead>
@@ -6053,48 +6186,48 @@ Globally Scoped DNS Node Names" registry <span>[<a href="#RFC8552" class="cite x
 </section>
 </div>
 <div id="well-known-uri">
-<section id="section-15.2">
+<section id="section-16.2">
         <h3 id="name-well-known-uri">
-<a href="#section-15.2" class="section-number selfRef">15.2. </a><a href="#name-well-known-uri" class="section-name selfRef">Well-Known URI</a>
+<a href="#section-16.2" class="section-number selfRef">16.2. </a><a href="#name-well-known-uri" class="section-name selfRef">Well-Known URI</a>
         </h3>
-<p id="section-15.2-1">IANA is requested to add the following entry to the "Well-Known URIs"
-registry <span>[<a href="#RFC8615" class="cite xref">RFC8615</a>]</span>:<a href="#section-15.2-1" class="pilcrow">¶</a></p>
-<span class="break"></span><dl class="dlParallel" id="section-15.2-2">
-          <dt id="section-15.2-2.1">URI Suffix:</dt>
-          <dd style="margin-left: 1.5em" id="section-15.2-2.2">
-            <p id="section-15.2-2.2.1">hmtp<a href="#section-15.2-2.2.1" class="pilcrow">¶</a></p>
+<p id="section-16.2-1">IANA is requested to add the following entry to the "Well-Known URIs"
+registry <span>[<a href="#RFC8615" class="cite xref">RFC8615</a>]</span>:<a href="#section-16.2-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-16.2-2">
+          <dt id="section-16.2-2.1">URI Suffix:</dt>
+          <dd style="margin-left: 1.5em" id="section-16.2-2.2">
+            <p id="section-16.2-2.2.1">hmtp<a href="#section-16.2-2.2.1" class="pilcrow">¶</a></p>
 </dd>
           <dd class="break"></dd>
-<dt id="section-15.2-2.3">Change Controller:</dt>
-          <dd style="margin-left: 1.5em" id="section-15.2-2.4">
-            <p id="section-15.2-2.4.1">IETF<a href="#section-15.2-2.4.1" class="pilcrow">¶</a></p>
+<dt id="section-16.2-2.3">Change Controller:</dt>
+          <dd style="margin-left: 1.5em" id="section-16.2-2.4">
+            <p id="section-16.2-2.4.1">IETF<a href="#section-16.2-2.4.1" class="pilcrow">¶</a></p>
 </dd>
           <dd class="break"></dd>
-<dt id="section-15.2-2.5">Specification Document(s):</dt>
-          <dd style="margin-left: 1.5em" id="section-15.2-2.6">
-            <p id="section-15.2-2.6.1"><a href="#capabilities-document" class="auto internal xref">Section 4.3</a> of RFC XXXX<a href="#section-15.2-2.6.1" class="pilcrow">¶</a></p>
+<dt id="section-16.2-2.5">Specification Document(s):</dt>
+          <dd style="margin-left: 1.5em" id="section-16.2-2.6">
+            <p id="section-16.2-2.6.1"><a href="#capabilities-document" class="auto internal xref">Section 4.3</a> of RFC XXXX<a href="#section-16.2-2.6.1" class="pilcrow">¶</a></p>
 </dd>
           <dd class="break"></dd>
-<dt id="section-15.2-2.7">Status:</dt>
-          <dd style="margin-left: 1.5em" id="section-15.2-2.8">
-            <p id="section-15.2-2.8.1">permanent<a href="#section-15.2-2.8.1" class="pilcrow">¶</a></p>
+<dt id="section-16.2-2.7">Status:</dt>
+          <dd style="margin-left: 1.5em" id="section-16.2-2.8">
+            <p id="section-16.2-2.8.1">permanent<a href="#section-16.2-2.8.1" class="pilcrow">¶</a></p>
 </dd>
           <dd class="break"></dd>
-<dt id="section-15.2-2.9">Related Information:</dt>
-          <dd style="margin-left: 1.5em" id="section-15.2-2.10">
-            <p id="section-15.2-2.10.1">None<a href="#section-15.2-2.10.1" class="pilcrow">¶</a></p>
+<dt id="section-16.2-2.9">Related Information:</dt>
+          <dd style="margin-left: 1.5em" id="section-16.2-2.10">
+            <p id="section-16.2-2.10.1">None<a href="#section-16.2-2.10.1" class="pilcrow">¶</a></p>
 </dd>
         <dd class="break"></dd>
 </dl>
 </section>
 </div>
 <div id="iana-dkim">
-<section id="section-15.3">
+<section id="section-16.3">
         <h3 id="name-dkim-service-type">
-<a href="#section-15.3" class="section-number selfRef">15.3. </a><a href="#name-dkim-service-type" class="section-name selfRef">DKIM Service Type</a>
+<a href="#section-16.3" class="section-number selfRef">16.3. </a><a href="#name-dkim-service-type" class="section-name selfRef">DKIM Service Type</a>
         </h3>
-<p id="section-15.3-1">IANA is requested to add the following entry to the "DKIM Service
-Types" registry <span>[<a href="#RFC6376" class="cite xref">RFC6376</a>]</span>:<a href="#section-15.3-1" class="pilcrow">¶</a></p>
+<p id="section-16.3-1">IANA is requested to add the following entry to the "DKIM Service
+Types" registry <span>[<a href="#RFC6376" class="cite xref">RFC6376</a>]</span>:<a href="#section-16.3-1" class="pilcrow">¶</a></p>
 <table class="center" id="table-5">
           <caption><a href="#table-5" class="selfRef">Table 5</a></caption>
 <thead>
@@ -6115,40 +6248,40 @@ Types" registry <span>[<a href="#RFC6376" class="cite xref">RFC6376</a>]</span>:
 </section>
 </div>
 <div id="iana-signature-params">
-<section id="section-15.4">
+<section id="section-16.4">
         <h3 id="name-http-signature-metadata-par">
-<a href="#section-15.4" class="section-number selfRef">15.4. </a><a href="#name-http-signature-metadata-par" class="section-name selfRef">HTTP Signature Metadata Parameter</a>
+<a href="#section-16.4" class="section-number selfRef">16.4. </a><a href="#name-http-signature-metadata-par" class="section-name selfRef">HTTP Signature Metadata Parameter</a>
         </h3>
-<p id="section-15.4-1">IANA is requested to add the following entry to the "HTTP Signature
-Metadata Parameters" registry <span>[<a href="#RFC9421" class="cite xref">RFC9421</a>]</span>:<a href="#section-15.4-1" class="pilcrow">¶</a></p>
-<span class="break"></span><dl class="dlParallel" id="section-15.4-2">
-          <dt id="section-15.4-2.1">Name:</dt>
-          <dd style="margin-left: 1.5em" id="section-15.4-2.2">
-            <p id="section-15.4-2.2.1">domain<a href="#section-15.4-2.2.1" class="pilcrow">¶</a></p>
+<p id="section-16.4-1">IANA is requested to add the following entry to the "HTTP Signature
+Metadata Parameters" registry <span>[<a href="#RFC9421" class="cite xref">RFC9421</a>]</span>:<a href="#section-16.4-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-16.4-2">
+          <dt id="section-16.4-2.1">Name:</dt>
+          <dd style="margin-left: 1.5em" id="section-16.4-2.2">
+            <p id="section-16.4-2.2.1">domain<a href="#section-16.4-2.2.1" class="pilcrow">¶</a></p>
 </dd>
           <dd class="break"></dd>
-<dt id="section-15.4-2.3">Description:</dt>
-          <dd style="margin-left: 1.5em" id="section-15.4-2.4">
-            <p id="section-15.4-2.4.1">The domain name under which the key identified by the "keyid"
+<dt id="section-16.4-2.3">Description:</dt>
+          <dd style="margin-left: 1.5em" id="section-16.4-2.4">
+            <p id="section-16.4-2.4.1">The domain name under which the key identified by the "keyid"
 parameter is published, as a DKIM key record, at the name
-<code>&lt;keyid&gt;._domainkey.&lt;domain&gt;</code>.<a href="#section-15.4-2.4.1" class="pilcrow">¶</a></p>
+<code>&lt;keyid&gt;._domainkey.&lt;domain&gt;</code>.<a href="#section-16.4-2.4.1" class="pilcrow">¶</a></p>
 </dd>
           <dd class="break"></dd>
-<dt id="section-15.4-2.5">Reference:</dt>
-          <dd style="margin-left: 1.5em" id="section-15.4-2.6">
-            <p id="section-15.4-2.6.1"><a href="#signature-construction" class="auto internal xref">Section 8.2</a> of RFC XXXX<a href="#section-15.4-2.6.1" class="pilcrow">¶</a></p>
+<dt id="section-16.4-2.5">Reference:</dt>
+          <dd style="margin-left: 1.5em" id="section-16.4-2.6">
+            <p id="section-16.4-2.6.1"><a href="#signature-construction" class="auto internal xref">Section 8.2</a> of RFC XXXX<a href="#section-16.4-2.6.1" class="pilcrow">¶</a></p>
 </dd>
         <dd class="break"></dd>
 </dl>
 </section>
 </div>
 <div id="iana-transmission-types">
-<section id="section-15.5">
+<section id="section-16.5">
         <h3 id="name-mail-transmission-types">
-<a href="#section-15.5" class="section-number selfRef">15.5. </a><a href="#name-mail-transmission-types" class="section-name selfRef">Mail Transmission Types</a>
+<a href="#section-16.5" class="section-number selfRef">16.5. </a><a href="#name-mail-transmission-types" class="section-name selfRef">Mail Transmission Types</a>
         </h3>
-<p id="section-15.5-1">IANA is requested to add the following entries to the "Mail
-Transmission Types" registry in the "Mail Parameters" registry group:<a href="#section-15.5-1" class="pilcrow">¶</a></p>
+<p id="section-16.5-1">IANA is requested to add the following entries to the "Mail
+Transmission Types" registry in the "Mail Parameters" registry group:<a href="#section-16.5-1" class="pilcrow">¶</a></p>
 <table class="center" id="table-6">
           <caption><a href="#table-6" class="selfRef">Table 6</a></caption>
 <thead>
@@ -6174,104 +6307,104 @@ Transmission Types" registry in the "Mail Parameters" registry group:<a href="#s
 </section>
 </div>
 <div id="iana-urn">
-<section id="section-15.6">
+<section id="section-16.6">
         <h3 id="name-urn-sub-namespace">
-<a href="#section-15.6" class="section-number selfRef">15.6. </a><a href="#name-urn-sub-namespace" class="section-name selfRef">URN Sub-namespace</a>
+<a href="#section-16.6" class="section-number selfRef">16.6. </a><a href="#name-urn-sub-namespace" class="section-name selfRef">URN Sub-namespace</a>
         </h3>
-<p id="section-15.6-1">IANA is requested to register the following entry in the "IETF URN
+<p id="section-16.6-1">IANA is requested to register the following entry in the "IETF URN
 Sub-namespace for Registered Protocol Parameter Identifiers" registry
-<span>[<a href="#RFC3553" class="cite xref">RFC3553</a>]</span>:<a href="#section-15.6-1" class="pilcrow">¶</a></p>
-<span class="break"></span><dl class="dlParallel" id="section-15.6-2">
-          <dt id="section-15.6-2.1">Registry name:</dt>
-          <dd style="margin-left: 1.5em" id="section-15.6-2.2">
-            <p id="section-15.6-2.2.1">hmtp<a href="#section-15.6-2.2.1" class="pilcrow">¶</a></p>
+<span>[<a href="#RFC3553" class="cite xref">RFC3553</a>]</span>:<a href="#section-16.6-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-16.6-2">
+          <dt id="section-16.6-2.1">Registry name:</dt>
+          <dd style="margin-left: 1.5em" id="section-16.6-2.2">
+            <p id="section-16.6-2.2.1">hmtp<a href="#section-16.6-2.2.1" class="pilcrow">¶</a></p>
 </dd>
           <dd class="break"></dd>
-<dt id="section-15.6-2.3">Specification:</dt>
-          <dd style="margin-left: 1.5em" id="section-15.6-2.4">
-            <p id="section-15.6-2.4.1">RFC XXXX<a href="#section-15.6-2.4.1" class="pilcrow">¶</a></p>
+<dt id="section-16.6-2.3">Specification:</dt>
+          <dd style="margin-left: 1.5em" id="section-16.6-2.4">
+            <p id="section-16.6-2.4.1">RFC XXXX<a href="#section-16.6-2.4.1" class="pilcrow">¶</a></p>
 </dd>
           <dd class="break"></dd>
-<dt id="section-15.6-2.5">Repository:</dt>
-          <dd style="margin-left: 1.5em" id="section-15.6-2.6">
-            <p id="section-15.6-2.6.1">The "HTTP Mail Transfer Protocol (HMTP)" registry group defined in
+<dt id="section-16.6-2.5">Repository:</dt>
+          <dd style="margin-left: 1.5em" id="section-16.6-2.6">
+            <p id="section-16.6-2.6.1">The "HTTP Mail Transfer Protocol (HMTP)" registry group defined in
 this document.  URNs of the form
 <code>urn:ietf:params:hmtp:error:&lt;name&gt;</code> identify problem types
-registered in the "HMTP Problem Types" registry.<a href="#section-15.6-2.6.1" class="pilcrow">¶</a></p>
+registered in the "HMTP Problem Types" registry.<a href="#section-16.6-2.6.1" class="pilcrow">¶</a></p>
 </dd>
           <dd class="break"></dd>
-<dt id="section-15.6-2.7">Index value:</dt>
-          <dd style="margin-left: 1.5em" id="section-15.6-2.8">
-            <p id="section-15.6-2.8.1">The name of a problem type, as registered in the "HMTP Problem
-Types" registry.<a href="#section-15.6-2.8.1" class="pilcrow">¶</a></p>
+<dt id="section-16.6-2.7">Index value:</dt>
+          <dd style="margin-left: 1.5em" id="section-16.6-2.8">
+            <p id="section-16.6-2.8.1">The name of a problem type, as registered in the "HMTP Problem
+Types" registry.<a href="#section-16.6-2.8.1" class="pilcrow">¶</a></p>
 </dd>
         <dd class="break"></dd>
 </dl>
 </section>
 </div>
 <div id="hmtp-registry-group">
-<section id="section-15.7">
+<section id="section-16.7">
         <h3 id="name-hmtp-registry-group">
-<a href="#section-15.7" class="section-number selfRef">15.7. </a><a href="#name-hmtp-registry-group" class="section-name selfRef">HMTP Registry Group</a>
+<a href="#section-16.7" class="section-number selfRef">16.7. </a><a href="#name-hmtp-registry-group" class="section-name selfRef">HMTP Registry Group</a>
         </h3>
-<p id="section-15.7-1">IANA is requested to create a new registry group titled "HTTP Mail
+<p id="section-16.7-1">IANA is requested to create a new registry group titled "HTTP Mail
 Transfer Protocol (HMTP)" containing the registries defined in the
 following subsections.  For all of them, the registration policy is
 Specification Required <span>[<a href="#RFC8126" class="cite xref">RFC8126</a>]</span>.  The designated experts verify
 that the specification is publicly available, that the registered
 name does not conflict with an existing entry, and that the
 specification is consistent with the extension rules of
-<a href="#capabilities" class="auto internal xref">Section 5.4</a>.<a href="#section-15.7-1" class="pilcrow">¶</a></p>
+<a href="#capabilities" class="auto internal xref">Section 5.4</a>.<a href="#section-16.7-1" class="pilcrow">¶</a></p>
 <div id="iana-capabilities">
-<section id="section-15.7.1">
+<section id="section-16.7.1">
           <h4 id="name-hmtp-capabilities">
-<a href="#section-15.7.1" class="section-number selfRef">15.7.1. </a><a href="#name-hmtp-capabilities" class="section-name selfRef">HMTP Capabilities</a>
+<a href="#section-16.7.1" class="section-number selfRef">16.7.1. </a><a href="#name-hmtp-capabilities" class="section-name selfRef">HMTP Capabilities</a>
           </h4>
-<p id="section-15.7.1-1">The registry contains capabilities with registered names.
+<p id="section-16.7.1-1">The registry contains capabilities with registered names.
 Capabilities identified by URIs are not registered (see
 <a href="#capability-names" class="auto internal xref">Section 5.4.1</a>).  The registry records the following fields for
-each capability:<a href="#section-15.7.1-1" class="pilcrow">¶</a></p>
+each capability:<a href="#section-16.7.1-1" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="section-15.7.1-2.1">
-              <p id="section-15.7.1-2.1.1">Name: the registered name of the capability, with the syntax
-defined in <a href="#capability-names" class="auto internal xref">Section 5.4.1</a>.<a href="#section-15.7.1-2.1.1" class="pilcrow">¶</a></p>
+<li class="normal" id="section-16.7.1-2.1">
+              <p id="section-16.7.1-2.1.1">Name: the registered name of the capability, with the syntax
+defined in <a href="#capability-names" class="auto internal xref">Section 5.4.1</a>.<a href="#section-16.7.1-2.1.1" class="pilcrow">¶</a></p>
 </li>
-            <li class="normal" id="section-15.7.1-2.2">
-              <p id="section-15.7.1-2.2.1">Description: a brief description.<a href="#section-15.7.1-2.2.1" class="pilcrow">¶</a></p>
+            <li class="normal" id="section-16.7.1-2.2">
+              <p id="section-16.7.1-2.2.1">Description: a brief description.<a href="#section-16.7.1-2.2.1" class="pilcrow">¶</a></p>
 </li>
-            <li class="normal" id="section-15.7.1-2.3">
-              <p id="section-15.7.1-2.3.1">Must-Understand: "yes" or "no", as defined in <a href="#capabilities" class="auto internal xref">Section 5.4</a>.<a href="#section-15.7.1-2.3.1" class="pilcrow">¶</a></p>
+            <li class="normal" id="section-16.7.1-2.3">
+              <p id="section-16.7.1-2.3.1">Must-Understand: "yes" or "no", as defined in <a href="#capabilities" class="auto internal xref">Section 5.4</a>.<a href="#section-16.7.1-2.3.1" class="pilcrow">¶</a></p>
 </li>
-            <li class="normal" id="section-15.7.1-2.4">
-              <p id="section-15.7.1-2.4.1">Reference: the specification of the capability.<a href="#section-15.7.1-2.4.1" class="pilcrow">¶</a></p>
+            <li class="normal" id="section-16.7.1-2.4">
+              <p id="section-16.7.1-2.4.1">Reference: the specification of the capability.<a href="#section-16.7.1-2.4.1" class="pilcrow">¶</a></p>
 </li>
-            <li class="normal" id="section-15.7.1-2.5">
-              <p id="section-15.7.1-2.5.1">Change Controller: the party responsible for the capability.<a href="#section-15.7.1-2.5.1" class="pilcrow">¶</a></p>
+            <li class="normal" id="section-16.7.1-2.5">
+              <p id="section-16.7.1-2.5.1">Change Controller: the party responsible for the capability.<a href="#section-16.7.1-2.5.1" class="pilcrow">¶</a></p>
 </li>
           </ul>
-<p id="section-15.7.1-3">The registry is initially empty.<a href="#section-15.7.1-3" class="pilcrow">¶</a></p>
+<p id="section-16.7.1-3">The registry is initially empty.<a href="#section-16.7.1-3" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="iana-endpoints">
-<section id="section-15.7.2">
+<section id="section-16.7.2">
           <h4 id="name-hmtp-endpoints">
-<a href="#section-15.7.2" class="section-number selfRef">15.7.2. </a><a href="#name-hmtp-endpoints" class="section-name selfRef">HMTP Endpoints</a>
+<a href="#section-16.7.2" class="section-number selfRef">16.7.2. </a><a href="#name-hmtp-endpoints" class="section-name selfRef">HMTP Endpoints</a>
           </h4>
-<p id="section-15.7.2-1">The registry records the following fields for each endpoint name
-used in the "endpoints" member of a Version Object:<a href="#section-15.7.2-1" class="pilcrow">¶</a></p>
+<p id="section-16.7.2-1">The registry records the following fields for each endpoint name
+used in the "endpoints" member of a Version Object:<a href="#section-16.7.2-1" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="section-15.7.2-2.1">
-              <p id="section-15.7.2-2.1.1">Name: the member name.<a href="#section-15.7.2-2.1.1" class="pilcrow">¶</a></p>
+<li class="normal" id="section-16.7.2-2.1">
+              <p id="section-16.7.2-2.1.1">Name: the member name.<a href="#section-16.7.2-2.1.1" class="pilcrow">¶</a></p>
 </li>
-            <li class="normal" id="section-15.7.2-2.2">
-              <p id="section-15.7.2-2.2.1">Description: a brief description.<a href="#section-15.7.2-2.2.1" class="pilcrow">¶</a></p>
+            <li class="normal" id="section-16.7.2-2.2">
+              <p id="section-16.7.2-2.2.1">Description: a brief description.<a href="#section-16.7.2-2.2.1" class="pilcrow">¶</a></p>
 </li>
-            <li class="normal" id="section-15.7.2-2.3">
-              <p id="section-15.7.2-2.3.1">Reference: the specification of the endpoint and of the members of
-its Endpoint Object.<a href="#section-15.7.2-2.3.1" class="pilcrow">¶</a></p>
+            <li class="normal" id="section-16.7.2-2.3">
+              <p id="section-16.7.2-2.3.1">Reference: the specification of the endpoint and of the members of
+its Endpoint Object.<a href="#section-16.7.2-2.3.1" class="pilcrow">¶</a></p>
 </li>
           </ul>
-<p id="section-15.7.2-3">The initial contents are:<a href="#section-15.7.2-3" class="pilcrow">¶</a></p>
+<p id="section-16.7.2-3">The initial contents are:<a href="#section-16.7.2-3" class="pilcrow">¶</a></p>
 <table class="center" id="table-7">
             <caption><a href="#table-7" class="selfRef">Table 7</a></caption>
 <thead>
@@ -6299,24 +6432,24 @@ its Endpoint Object.<a href="#section-15.7.2-2.3.1" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="iana-encodings">
-<section id="section-15.7.3">
+<section id="section-16.7.3">
           <h4 id="name-hmtp-content-encodings">
-<a href="#section-15.7.3" class="section-number selfRef">15.7.3. </a><a href="#name-hmtp-content-encodings" class="section-name selfRef">HMTP Content Encodings</a>
+<a href="#section-16.7.3" class="section-number selfRef">16.7.3. </a><a href="#name-hmtp-content-encodings" class="section-name selfRef">HMTP Content Encodings</a>
           </h4>
-<p id="section-15.7.3-1">The registry records the following fields for each encoding used in
-the "encoding" member of a Content Reference:<a href="#section-15.7.3-1" class="pilcrow">¶</a></p>
+<p id="section-16.7.3-1">The registry records the following fields for each encoding used in
+the "encoding" member of a Content Reference:<a href="#section-16.7.3-1" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="section-15.7.3-2.1">
-              <p id="section-15.7.3-2.1.1">Name: the name of the encoding.<a href="#section-15.7.3-2.1.1" class="pilcrow">¶</a></p>
+<li class="normal" id="section-16.7.3-2.1">
+              <p id="section-16.7.3-2.1.1">Name: the name of the encoding.<a href="#section-16.7.3-2.1.1" class="pilcrow">¶</a></p>
 </li>
-            <li class="normal" id="section-15.7.3-2.2">
-              <p id="section-15.7.3-2.2.1">Description: a brief description of the transformation.<a href="#section-15.7.3-2.2.1" class="pilcrow">¶</a></p>
+            <li class="normal" id="section-16.7.3-2.2">
+              <p id="section-16.7.3-2.2.1">Description: a brief description of the transformation.<a href="#section-16.7.3-2.2.1" class="pilcrow">¶</a></p>
 </li>
-            <li class="normal" id="section-15.7.3-2.3">
-              <p id="section-15.7.3-2.3.1">Reference: the specification of the encoding.<a href="#section-15.7.3-2.3.1" class="pilcrow">¶</a></p>
+            <li class="normal" id="section-16.7.3-2.3">
+              <p id="section-16.7.3-2.3.1">Reference: the specification of the encoding.<a href="#section-16.7.3-2.3.1" class="pilcrow">¶</a></p>
 </li>
           </ul>
-<p id="section-15.7.3-3">The initial contents are:<a href="#section-15.7.3-3" class="pilcrow">¶</a></p>
+<p id="section-16.7.3-3">The initial contents are:<a href="#section-16.7.3-3" class="pilcrow">¶</a></p>
 <table class="center" id="table-8">
             <caption><a href="#table-8" class="selfRef">Table 8</a></caption>
 <thead>
@@ -6338,34 +6471,34 @@ the "encoding" member of a Content Reference:<a href="#section-15.7.3-1" class="
 </section>
 </div>
 <div id="iana-problem-types">
-<section id="section-15.7.4">
+<section id="section-16.7.4">
           <h4 id="name-hmtp-problem-types-2">
-<a href="#section-15.7.4" class="section-number selfRef">15.7.4. </a><a href="#name-hmtp-problem-types-2" class="section-name selfRef">HMTP Problem Types</a>
+<a href="#section-16.7.4" class="section-number selfRef">16.7.4. </a><a href="#name-hmtp-problem-types-2" class="section-name selfRef">HMTP Problem Types</a>
           </h4>
-<p id="section-15.7.4-1">The registry records the following fields for each problem type:<a href="#section-15.7.4-1" class="pilcrow">¶</a></p>
+<p id="section-16.7.4-1">The registry records the following fields for each problem type:<a href="#section-16.7.4-1" class="pilcrow">¶</a></p>
 <ul class="normal">
-<li class="normal" id="section-15.7.4-2.1">
-              <p id="section-15.7.4-2.1.1">Name: the name of the problem type, used in the URN
-<code>urn:ietf:params:hmtp:error:&lt;name&gt;</code>.<a href="#section-15.7.4-2.1.1" class="pilcrow">¶</a></p>
+<li class="normal" id="section-16.7.4-2.1">
+              <p id="section-16.7.4-2.1.1">Name: the name of the problem type, used in the URN
+<code>urn:ietf:params:hmtp:error:&lt;name&gt;</code>.<a href="#section-16.7.4-2.1.1" class="pilcrow">¶</a></p>
 </li>
-            <li class="normal" id="section-15.7.4-2.2">
-              <p id="section-15.7.4-2.2.1">Scope: "Request", "Recipient", or "Both".<a href="#section-15.7.4-2.2.1" class="pilcrow">¶</a></p>
+            <li class="normal" id="section-16.7.4-2.2">
+              <p id="section-16.7.4-2.2.1">Scope: "Request", "Recipient", or "Both".<a href="#section-16.7.4-2.2.1" class="pilcrow">¶</a></p>
 </li>
-            <li class="normal" id="section-15.7.4-2.3">
-              <p id="section-15.7.4-2.3.1">HTTP Status: the HTTP status code used for request-level failures.<a href="#section-15.7.4-2.3.1" class="pilcrow">¶</a></p>
+            <li class="normal" id="section-16.7.4-2.3">
+              <p id="section-16.7.4-2.3.1">HTTP Status: the HTTP status code used for request-level failures.<a href="#section-16.7.4-2.3.1" class="pilcrow">¶</a></p>
 </li>
-            <li class="normal" id="section-15.7.4-2.4">
-              <p id="section-15.7.4-2.4.1">Enhanced Status: the enhanced status code or codes.<a href="#section-15.7.4-2.4.1" class="pilcrow">¶</a></p>
+            <li class="normal" id="section-16.7.4-2.4">
+              <p id="section-16.7.4-2.4.1">Enhanced Status: the enhanced status code or codes.<a href="#section-16.7.4-2.4.1" class="pilcrow">¶</a></p>
 </li>
-            <li class="normal" id="section-15.7.4-2.5">
-              <p id="section-15.7.4-2.5.1">SMTP Reply: the SMTP reply code or codes.<a href="#section-15.7.4-2.5.1" class="pilcrow">¶</a></p>
+            <li class="normal" id="section-16.7.4-2.5">
+              <p id="section-16.7.4-2.5.1">SMTP Reply: the SMTP reply code or codes.<a href="#section-16.7.4-2.5.1" class="pilcrow">¶</a></p>
 </li>
-            <li class="normal" id="section-15.7.4-2.6">
-              <p id="section-15.7.4-2.6.1">Reference: the specification of the problem type.<a href="#section-15.7.4-2.6.1" class="pilcrow">¶</a></p>
+            <li class="normal" id="section-16.7.4-2.6">
+              <p id="section-16.7.4-2.6.1">Reference: the specification of the problem type.<a href="#section-16.7.4-2.6.1" class="pilcrow">¶</a></p>
 </li>
           </ul>
-<p id="section-15.7.4-3">The initial contents are the problem types listed in <a href="#tab-mapping" class="auto internal xref">Table 2</a>,
-each with the reference <a href="#smtp-mapping" class="auto internal xref">Section 9.2</a> of RFC XXXX.<a href="#section-15.7.4-3" class="pilcrow">¶</a></p>
+<p id="section-16.7.4-3">The initial contents are the problem types listed in <a href="#tab-mapping" class="auto internal xref">Table 2</a>,
+each with the reference <a href="#smtp-mapping" class="auto internal xref">Section 9.2</a> of RFC XXXX.<a href="#section-16.7.4-3" class="pilcrow">¶</a></p>
 </section>
 </div>
 </section>
@@ -6373,14 +6506,14 @@ each with the reference <a href="#smtp-mapping" class="auto internal xref">Secti
 </section>
 </div>
 <div id="sec-combined-references">
-<section id="section-16">
+<section id="section-17">
       <h2 id="name-references">
-<a href="#section-16" class="section-number selfRef">16. </a><a href="#name-references" class="section-name selfRef">References</a>
+<a href="#section-17" class="section-number selfRef">17. </a><a href="#name-references" class="section-name selfRef">References</a>
       </h2>
 <div id="sec-normative-references">
-<section id="section-16.1">
+<section id="section-17.1">
         <h3 id="name-normative-references">
-<a href="#section-16.1" class="section-number selfRef">16.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+<a href="#section-17.1" class="section-number selfRef">17.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
         </h3>
 <dl class="references">
 <dt id="RFC2045">[RFC2045]</dt>
@@ -6551,9 +6684,9 @@ each with the reference <a href="#smtp-mapping" class="auto internal xref">Secti
 </section>
 </div>
 <div id="sec-informative-references">
-<section id="section-16.2">
+<section id="section-17.2">
         <h3 id="name-informative-references">
-<a href="#section-16.2" class="section-number selfRef">16.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+<a href="#section-17.2" class="section-number selfRef">17.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
         </h3>
 <dl class="references">
 <dt id="AWS-SES">[AWS-SES]</dt>
@@ -6587,6 +6720,10 @@ each with the reference <a href="#smtp-mapping" class="auto internal xref">Secti
 <dt id="RFC4954">[RFC4954]</dt>
         <dd>
 <span class="refAuthor">Siemborski, R., Ed.</span> and <span class="refAuthor">A. Melnikov, Ed.</span>, <span class="refTitle">"SMTP Service Extension for Authentication"</span>, <span class="seriesInfo">RFC 4954</span>, <span class="seriesInfo">DOI 10.17487/RFC4954</span>, <time datetime="2007-07" class="refDate">July 2007</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc4954">https://www.rfc-editor.org/rfc/rfc4954</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5965">[RFC5965]</dt>
+        <dd>
+<span class="refAuthor">Shafranovich, Y.</span>, <span class="refAuthor">Levine, J.</span>, and <span class="refAuthor">M. Kucherawy</span>, <span class="refTitle">"An Extensible Format for Email Feedback Reports"</span>, <span class="seriesInfo">RFC 5965</span>, <span class="seriesInfo">DOI 10.17487/RFC5965</span>, <time datetime="2010-08" class="refDate">August 2010</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc5965">https://www.rfc-editor.org/rfc/rfc5965</a>&gt;</span>. </dd>
 <dd class="break"></dd>
 <dt id="RFC6522">[RFC6522]</dt>
         <dd>
@@ -6940,8 +7077,18 @@ field "4.2.2", and the "returnedContent" member becomes a
 </div>
 </section>
 </div>
-<div id="authors-addresses">
+<div id="acknowledgments">
 <section id="appendix-B">
+      <h2 id="name-acknowledgments">
+<a href="#name-acknowledgments" class="section-name selfRef">Acknowledgments</a>
+      </h2>
+<p id="appendix-B-1">The author thanks John Klensin and John Levine for their comments on
+an earlier version of this document, in particular on its
+relationship to SMTP and on related work.<a href="#appendix-B-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-C">
       <h2 id="name-authors-address">
 <a href="#name-authors-address" class="section-name selfRef">Author's Address</a>
       </h2>
