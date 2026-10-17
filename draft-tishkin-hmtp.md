@@ -1885,8 +1885,11 @@ within one scope for requests with different content.
 
 When a Receiving Server sends a 200 (OK) or 202 (Accepted) response,
 it MUST store the key, a hash of the content of the request, and the
-response, and MUST retain them for at least 24 hours.  When it
-receives a request whose key matches a stored entry:
+response, and MUST retain them for at least 24 hours.  The hash is
+computed over the content after any content coding has been removed,
+so that a retry is recognized even if it uses a different content
+coding.  When the Receiving Server receives a request whose key
+matches a stored entry:
 
 - If the hash of the content of the request matches, the Receiving
   Server MUST NOT process the request again and MUST return the stored
@@ -1897,7 +1900,9 @@ receives a request whose key matches a stored entry:
   requests solely to learn whether a retrieval has been completed.
 
 - Otherwise, it MUST reject the request with the "id-conflict"
-  problem type.
+  problem type.  The problem details object contains, as extension
+  members, the "recipients" member of the stored Response Object and
+  its "queueId" member, if present.
 
 If a request with the same scope and Transfer Identifier is still
 being processed, the Receiving Server MUST NOT process the second
@@ -1922,6 +1927,26 @@ A sender retries a request as follows:
 
 - The sender MUST NOT retry a request, or deliver to an Envelope
   Recipient, after a permanent failure.
+
+The content of a retry is compared with the content of the earlier
+request octet for octet.  The sender MUST therefore retain the octets
+of the content of the request and MUST resend them unchanged.  A
+Request Object that is serialized again, for example from fields that
+the sender has stored in a database, is different content, even if it
+represents the same JSON values, because the order of members,
+whitespace, and escaping can differ.  Only the header fields of the
+request, including its signature, and its content coding can differ
+between attempts.
+
+If a retry is nevertheless rejected with the "id-conflict" problem
+type, the earlier request has been processed, and the problem details
+object contains its results.  A sender that receives this problem type
+in response to a retry of its own earlier request MUST treat these
+results as the results of the earlier request, and not as a failure
+of the whole request.  In particular, it MUST NOT generate a delivery
+status notification reporting a failure for an Envelope Recipient that
+has the result "accepted".  If the request was not a retry, the
+"id-conflict" problem type is a permanent failure.
 
 A failure of the whole request is temporary if the "smtpStatus" member
 of the problem details object has the class 4.  If the response does
@@ -2535,7 +2560,8 @@ unsupported-capability:
 
 id-conflict:
 : The Transfer Identifier has already been used for a request with
-  different content ({{idempotency}}).
+  different content ({{idempotency}}).  The problem details object
+  contains the results of the earlier request.
 
 signature-invalid:
 : The request has no valid HMTP signature ({{verification}}).
@@ -3603,8 +3629,11 @@ the reporting domain.
 Transfer Identifiers are scoped to the Sending Domain or to the
 authenticated account, so a third party cannot cause a legitimate
 request to be suppressed as a duplicate without being able to sign
-requests for the same scope.  The limit on the length of Transfer
-Identifiers bounds the storage that a Receiving Server needs for them.
+requests for the same scope.  For the same reason, the results of an
+earlier request that accompany the "id-conflict" problem type
+({{idempotency}}) are disclosed only to a sender in the same scope.
+The limit on the length of Transfer Identifiers bounds the storage
+that a Receiving Server needs for them.
 
 # Privacy Considerations {#privacy}
 
