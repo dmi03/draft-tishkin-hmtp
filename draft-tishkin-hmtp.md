@@ -2518,9 +2518,13 @@ smtpStatus:
 : REQUIRED in problem details objects sent by HMTP servers.  An
   enhanced mail system status code {{RFC3463}} in the form
   "class.subject.detail".  The class MUST be 4 (persistent transient
-  failure) or 5 (permanent failure).  The class determines whether the
-  failure is temporary or permanent, also for problem types that are
-  unknown to the recipient of the problem details object.
+  failure) or 5 (permanent failure).  In a response, the class
+  determines whether the failure is temporary or permanent, also for
+  problem types that are unknown to the recipient of the problem
+  details object.  In a delivery status report, the "action" member
+  determines whether delivery has failed, and the class 4 can also
+  describe a failure after which the reporting server has given up
+  ({{report-object}}).
 
 smtpReply:
 : OPTIONAL.  An SMTP reply code {{RFC5321}} that corresponds to the
@@ -2593,6 +2597,7 @@ second for a permanent failure.
 | mailbox-disabled | Recipient | - | 5.2.1 | 550 |
 | mailbox-full | Recipient | - | 4.2.2 / 5.2.2 | 452 / 552 |
 | routing-failed | Recipient | - | 4.4.4 / 5.4.4 | 451 / 550 |
+| delivery-expired | Recipient | - | 4.4.7 | 451 |
 | conversion-required | Recipient | - | 5.6.3 | 554 |
 | tls-required | Recipient | - | 5.7.30 | 550 |
 {: #tab-mapping title="HMTP Problem Types"}
@@ -2704,6 +2709,13 @@ routing-failed:
   for example because the recipient domain supports neither HMTP nor,
   for a server that supports fallback, SMTP.
 
+delivery-expired:
+: The server has given up retrying the delivery to the recipient
+  ({{idempotency}}), and no more specific problem type is available.
+  It is used in delivery status reports and DSN messages with the
+  action "failed" ({{dsn}}) and corresponds to the enhanced status
+  code for an expired delivery time defined in {{RFC3463}}.
+
 conversion-required:
 : Delivery requires a conversion of the Message that the server does
   not perform, for example because an SMTP server used for fallback
@@ -2756,9 +2768,13 @@ The fields of the DSN are filled in as follows:
   host name of the SMTP server, with the type "dns".
 
 - The "Status" field contains the enhanced status code from the
-  "smtpStatus" member of the problem details object.  A Sending
-  Server that gives up after retries uses the code 4.4.7 if no more
-  specific code is available.
+  "smtpStatus" member of the problem details object.  A server that
+  gives up after retries uses the "failed" action together with the
+  enhanced status code of the last temporary failure, which has the
+  class 4, or, if no more specific code is available, the code 4.4.7
+  of the "delivery-expired" problem type.  As described in
+  {{RFC3463}}, the class 4 then denotes a persistent transient
+  failure that has caused the abandonment of delivery attempts.
 
 - The "Diagnostic-Code" field uses the diagnostic type "smtp" and
   contains the SMTP reply code, the enhanced status code, and the
@@ -2991,10 +3007,14 @@ problem:
 : REQUIRED for the actions "failed" and "delayed", and absent
   otherwise.  A problem details object ({{problem-details}}) that
   describes the reason for the action.  Its "smtpStatus" member is the
-  enhanced status code {{RFC3463}} of the recipient and MUST have the
-  class 5 for the action "failed" and the class 4 for the action
-  "delayed".  For the actions "delivered", "relayed", and "expanded",
-  the enhanced status code is "2.0.0".
+  enhanced status code {{RFC3463}} of the recipient.  For the action
+  "delayed", it MUST have the class 4.  For the action "failed", it
+  has the class 5 if the failure is permanent, or the class 4 if the
+  reporting server has given up after a persistent temporary failure,
+  as described in {{dsn}}.  The action, not the class, determines
+  whether the reporting server makes further delivery attempts.  For
+  the actions "delivered", "relayed", and "expanded", the enhanced
+  status code is "2.0.0".
 
 remoteServer:
 : OPTIONAL.  The host name of the server that reported the failure,
