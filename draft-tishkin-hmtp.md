@@ -922,6 +922,17 @@ uri:
   scheme and MAY be relative, in which case it is resolved against
   the URI of the Capabilities Document {{RFC3986}}.
 
+Requests do not carry the version of HMTP that they use.  Instead,
+the version of a request is determined by the endpoint to which it is
+sent: a request sent to an endpoint described in a Version Object is a
+request of that version.  The URI of every endpoint, after it has been
+resolved, MUST therefore differ from the URIs of the endpoints of all
+other versions in the same Capabilities Document.  This applies to the
+"uri" member of an Endpoint Object as well as to the URIs of related
+endpoints, such as the "reports" and "identities" members.  For
+example, a server can include the version in the path of each URI, as
+in "/hmtp/v1/transfer".
+
 The specification of an endpoint, or a capability ({{capabilities}}),
 can define further members of an Endpoint Object.  Because recipients
 ignore members they do not understand, new parameters can be added to
@@ -1054,8 +1065,10 @@ message:
 : REQUIRED.  A Content Object ({{content-object}}) whose content is
   the Message.
 
-The response to a successful request is a Response Object, specified
-in {{transfer-response}}.
+The Request Object does not identify the version of HMTP; the version
+is determined by the endpoint to which the request is sent
+({{endpoint-objects}}).  The response to a successful request is a
+Response Object, specified in {{transfer-response}}.
 
 ## Envelope {#envelope}
 
