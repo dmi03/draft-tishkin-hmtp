@@ -1352,11 +1352,12 @@ After responding:
   {{transfer-response}}).  By doing so, it accepts
   responsibility for retrieving the content and MUST complete the
   retrieval before the earliest "expires" timestamp of the Content
-  References.  If the retrieval fails permanently, or cannot be
-  completed before that time, the recipient MUST treat the Message as
-  undeliverable for all Envelope Recipients for which it was
-  accepted and generate delivery status notifications as described
-  in {{dsn}}.
+  References, unless it passes the Content References on to a next
+  hop as described below.  If the retrieval fails permanently, or
+  cannot be completed before that time, the recipient MUST treat the
+  Message as undeliverable for all Envelope Recipients for which it
+  was accepted and generate delivery status notifications as
+  described in {{dsn}}.
 
 This choice allows a recipient to retrieve small content
 synchronously while accepting very large Messages without keeping the
@@ -1380,7 +1381,34 @@ A server that relays a Message MAY pass Content References on to the
 next hop unchanged, without retrieving them, if at least 24 hours
 remain before their "expires" timestamp.  Otherwise, it MUST retrieve
 the content and either carry it inline or provide it through Content
-References of its own.
+References of its own.  The following rules apply to a server that
+passes Content References on:
+
+- Because it has not retrieved the content, it responds to the
+  request in which it received the Message with the status code 202
+  (Accepted), not 200 (OK).  It does not need to retrieve or verify
+  the content itself.
+
+- Its responsibility for the retrieval passes to the next hop when
+  the next hop accepts the Message for an Envelope Recipient.  From
+  then on, the next hop is responsible for the retrieval for that
+  recipient as described above, whether it retrieves the content
+  before or after responding or passes the Content References on in
+  turn.  If the retrieval fails, the server that is responsible for
+  it at that time generates the delivery status notifications
+  ({{dsn}}).
+
+- Until the next hop accepts the Message, for example while delivery
+  to it is retried, the server remains responsible for the
+  retrieval.  If it cannot pass the Content References on while at
+  least 24 hours remain before their "expires" timestamp, it MUST
+  retrieve the content itself as described above.
+
+The original sender does not learn whether or when the content has
+been retrieved along the path.  Because it has received the status
+code 202 (Accepted), it keeps the content available until its
+"expires" timestamp, as described above, which also allows servers
+further along the path to retrieve it.
 
 A recipient MAY reject a request that contains a Content Reference
 whose "expires" timestamp is less than 24 hours after the time of
@@ -1801,7 +1829,8 @@ A Receiving Server processes a transfer request as follows:
 
 8. It retrieves referenced content as described in
    {{reference-retrieval}}, either before responding or after
-   responding.
+   responding, or, if it relays the Message, passes the Content
+   References on to the next hop.
 
 9. It prepends trace header fields as described in {{trace}}, stores
    the Message for each accepted Envelope Recipient, and sends the
@@ -1828,7 +1857,9 @@ rejected the Message for some or all Envelope Recipients:
 : The Message has been accepted for at least one Envelope Recipient,
   but the retrieval of referenced content is still pending.  The
   Receiving Server has accepted responsibility for completing the
-  retrieval later, as described in {{reference-retrieval}}.  A
+  retrieval later, or for passing the Content References on to a next
+  hop that takes over this responsibility, as described in
+  {{reference-retrieval}}.  A
   Receiving Server MUST NOT use this status code for a request that
   contains no Content References.
 
