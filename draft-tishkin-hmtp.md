@@ -1152,7 +1152,12 @@ address:
 : REQUIRED.  The Envelope Recipient.  The value is a "Mailbox" as
   defined in {{Section 4.1.2 of RFC5321}}, without the enclosing
   angle brackets, or, if "smtpUtf8" is true, as extended by
-  {{RFC6531}}.
+  {{RFC6531}}.  A sender MUST NOT send an address that does not have
+  this syntax.  If the value is a string that does not have this
+  syntax, the Request Object is nevertheless valid: the recipient of
+  the request rejects only this Envelope Recipient, with the
+  "invalid-address" problem type ({{transfer-processing}}), and
+  processes the other Envelope Recipients as usual.
 
 dsn:
 : OPTIONAL.  A JSON object that carries the per-recipient parameters
@@ -1770,7 +1775,9 @@ A Receiving Server processes a transfer request as follows:
 
 3. It parses the Request Object and validates it against
    {{data-model}}.  It rejects an invalid Request Object with the
-   "invalid-request" problem type.
+   "invalid-request" problem type.  A syntactically invalid address of
+   an Envelope Recipient does not make the Request Object invalid; it
+   is handled in step 7.
 
 4. It checks the Transfer Identifier as described in
    {{idempotency}}.  If the request is a retry of a request that has
@@ -1785,7 +1792,9 @@ A Receiving Server processes a transfer request as follows:
    does not exceed its "maxRecipients" limit.
 
 7. It determines, for each Envelope Recipient, whether it accepts the
-   Message for that recipient.  For an Envelope Recipient whose
+   Message for that recipient.  It rejects an Envelope Recipient whose
+   address is syntactically invalid ({{envelope}}) with the
+   "invalid-address" problem type.  For an Envelope Recipient whose
    domain it does not serve, and for which it has no agreement to
    relay, it rejects the recipient with the "domain-not-served"
    problem type.  Other decisions are a matter of local policy.
@@ -2690,7 +2699,9 @@ unknown-recipient:
 : The recipient mailbox does not exist.
 
 invalid-address:
-: The address of the Envelope Recipient is syntactically invalid.
+: The address of the Envelope Recipient is syntactically invalid
+  ({{envelope}}).  Only this Envelope Recipient is rejected; the
+  other Envelope Recipients of the request are not affected.
 
 domain-not-served:
 : The server does not accept Messages for the domain of the Envelope
