@@ -1730,8 +1730,15 @@ contain the member `"releaseAt": "2026-01-02T09:00:00Z"` directly.
 A Sending Server transfers a Message to a Receiving Server by sending
 a transfer request to the transfer endpoint of the Receiving Server.
 All Envelope Recipients in one request MUST have domains for which
-discovery yielded the same transfer endpoint.  A Sending Server sends
-a separate request for each transfer endpoint.
+discovery ({{discovery}}) yielded the same set of usable ServiceMode
+records, that is, records with the same SvcPriority, TargetName, and
+SvcParams, regardless of the order in which they were returned.  A
+Sending Server groups the Envelope Recipients accordingly, sends a
+separate request for each group, and selects the host for each
+request as described in {{host-selection}}.  A set of records does
+not identify a single host in advance, because hosts of the same
+priority are tried in random order, but every host in the set serves
+all domains of the group.
 
 ## Request {#transfer-request}
 
@@ -3863,8 +3870,9 @@ the TLS handshake unless Encrypted Client Hello is used, and DNS
 queries for SVCB records reveal the domains with which a server
 exchanges mail unless encrypted DNS transports are used.
 
-An HMTP request contains all Envelope Recipients that are served by
-the same HMTP Endpoint.  As in SMTP, the Receiving Server learns all
+An HMTP request contains all Envelope Recipients whose domains are
+served by the same set of hosts ({{transfer}}).  As in SMTP, the
+Receiving Server learns all
 of them, including recipients that are not visible in the header
 fields of the Message, such as blind carbon copy recipients.
 Receiving Servers MUST NOT disclose the list of Envelope Recipients to
