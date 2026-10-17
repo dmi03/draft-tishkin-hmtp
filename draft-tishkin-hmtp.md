@@ -2919,10 +2919,21 @@ reportingServer:
 : REQUIRED.  The host name of the server that generates the report.
 
 transferId:
-: OPTIONAL.  The Transfer Identifier of the request in which the
-  reporting server received the Message, if it received the Message
-  over HMTP.  It allows the original sender of that request to
-  correlate the report with the request.
+: OPTIONAL.  The Transfer Identifier of the transfer request in which
+  the reporting server received the Message, if it received the
+  Message in a transfer request.  This member is present if and only
+  if "transferDomain" is present.
+
+transferDomain:
+: OPTIONAL.  The Sending Domain of that transfer request, in A-label
+  form, which is the scope of "transferId" ({{idempotency}}).  This
+  member is present if and only if "transferId" is present.
+
+  Together, "transferId" and "transferDomain" allow the sender of that
+  request to correlate the report with the request.  The report is
+  sent to the domain of the Envelope Sender, which is not necessarily
+  the Sending Domain of that request, for example if the Message
+  reached the reporting server through a relay.
 
 envid:
 : OPTIONAL.  The value of the "envid" member of the Envelope of the
@@ -2992,7 +3003,11 @@ status code 204 (No Content).  By doing so, it accepts responsibility
 for the report in the same way as for a Message.
 
 The server SHOULD correlate the report with a Message that it sent,
-using the "transferId", "envid", and "messageId" members.  It MAY
+using the "transferId", "envid", and "messageId" members.  It uses
+the "transferId" member only if the "transferDomain" member is a
+Sending Domain on whose behalf it signs transfer requests; otherwise,
+the Transfer Identifier belongs to the scope of another domain, such
+as that of a relay, and is ignored.  It MAY
 discard a report that it cannot correlate with any Message, but it
 still responds with the status code 204 (No Content), so that the
 reporting server does not retry the report.  Senders that rely on
@@ -3065,6 +3080,7 @@ Signature: hmtp=:...:
   "envelopeSender": "bounces+7f3a@example.com",
   "reportingServer": "mx.example.net",
   "transferId": "3q2-7wEXAMPLEd9Kc1fQ0g",
+  "transferDomain": "example.com",
   "messageId": "<20260101115500.9c1d@example.com>",
   "arrivalDate": "2026-01-01T12:00:01Z",
   "recipients": [
@@ -3088,8 +3104,12 @@ HTTP/1.1 204 No Content
 
 The request is signed by "example.net", the domain of the reporting
 server.  The server of "example.com" correlates the report with its
-earlier transfer request through the "transferId" member, which is
-scoped to its own Sending Domain.
+earlier transfer request through the "transferId" member, because the
+"transferDomain" member is its own Sending Domain.  Had the Message
+reached "mx.example.net" through a relay, "transferDomain" would
+contain the Sending Domain of the relay, and the server of
+"example.com" would correlate the report through the "envid" or
+"messageId" member instead.
 
 # SMTP Fallback and Interoperability {#smtp-fallback}
 
@@ -4101,6 +4121,7 @@ Signature: hmtp=:...:
   "envelopeSender": "alice@example.com",
   "reportingServer": "mx.example.net",
   "transferId": "Lw2eR5tY8uI1oP4aS7dF0g",
+  "transferDomain": "example.com",
   "envid": "QQ271828",
   "messageId": "<20260101130000.5e7b@example.com>",
   "arrivalDate": "2026-01-01T13:00:02Z",
