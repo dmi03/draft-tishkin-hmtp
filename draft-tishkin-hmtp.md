@@ -1923,13 +1923,15 @@ the request ({{verification}}), never a value taken from the content
 of the request.  A sender MUST NOT use the same Transfer Identifier
 within one scope for requests with different content.
 
-When a Receiving Server sends a 200 (OK) or 202 (Accepted) response,
-it MUST store the key, a hash of the content of the request, and the
-response, and MUST retain them for at least 24 hours.  The hash is
-computed over the content after any content coding has been removed,
-so that a retry is recognized even if it uses a different content
-coding.  When the Receiving Server receives a request whose key
-matches a stored entry:
+When a Receiving Server sends a 200 (OK) or 202 (Accepted) response
+to a transfer or submission request, or a 204 (No Content) response
+to a delivery status report ({{reports-processing}}), it MUST store
+the key, a hash of the content of the request, and the response, and
+MUST retain them for at least 24 hours.  The hash is computed over
+the content after any content coding has been removed, so that a
+retry is recognized even if it uses a different content coding.  When
+the Receiving Server receives a request whose key matches a stored
+entry:
 
 - If the hash of the content of the request matches, the Receiving
   Server MUST NOT process the request again and MUST return the stored
@@ -1940,9 +1942,9 @@ matches a stored entry:
   requests solely to learn whether a retrieval has been completed.
 
 - Otherwise, it MUST reject the request with the "id-conflict"
-  problem type.  The problem details object contains, as extension
-  members, the "recipients" member of the stored Response Object and
-  its "queueId" member, if present.
+  problem type.  If the stored response contains a Response Object,
+  the problem details object contains, as extension members, its
+  "recipients" member and, if present, its "queueId" member.
 
 If a request with the same scope and Transfer Identifier is still
 being processed, the Receiving Server MUST NOT process the second
@@ -2898,7 +2900,10 @@ The request has the same properties as a transfer request
   Message with an empty Envelope Sender.
 
 - The "id" member of the Report Object is a Transfer Identifier, and
-  retries follow the rules of {{idempotency}}.
+  retries follow the rules of {{idempotency}}.  The server that
+  receives the report stores the Transfer Identifier when it responds
+  with the status code 204 (No Content), as it does for a transfer
+  request when it responds with 200 (OK) or 202 (Accepted).
 
 A report covers one Message and MAY cover several of its Envelope
 Recipients, in the same way as a single DSN message.  A server MUST
@@ -2907,7 +2912,10 @@ NOT combine information about different Messages in one report.
 If the request fails temporarily, the server retries it as described
 in {{idempotency}}.  If the request fails permanently, or if the server
 gives up retrying, it MUST generate a DSN message instead, so that the
-information is not lost.  No report and no DSN message is generated
+information is not lost.  A retry that is rejected with the
+"id-conflict" problem type is not a permanent failure in this sense:
+it indicates that the earlier report has been accepted
+({{idempotency}}).  No report and no DSN message is generated
 about the failure to deliver a report or a DSN message.
 
 ### Report Object {#report-object}
@@ -3005,9 +3013,14 @@ willRetryUntil:
 The server that receives a report verifies the request as described in
 {{verification}}, except for the alignment check.  It rejects a report
 whose "envelopeSender" is in a domain that it does not serve with the
-"domain-not-served" problem type.  Otherwise, it responds with the
-status code 204 (No Content).  By doing so, it accepts responsibility
-for the report in the same way as for a Message.
+"domain-not-served" problem type.  It checks the Transfer Identifier
+of the report as described in {{idempotency}}: if the report is a
+retry of a report that has already been processed, it returns the
+stored response and does not process the report again, so that the
+Envelope Sender receives the information only once.  Otherwise, it
+responds with the status code 204 (No Content) and stores the
+Transfer Identifier.  By doing so, it accepts responsibility for the
+report in the same way as for a Message.
 
 The server SHOULD correlate the report with a Message that it sent,
 using the "transferId", "envid", and "messageId" members.  It uses
