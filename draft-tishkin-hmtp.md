@@ -1063,15 +1063,16 @@ The Envelope is a JSON object with the following members:
 
 id:
 : REQUIRED.  The Transfer Identifier of the request.  It is a string
-  of at least 1 character consisting only of the characters of the
+  of at least 22 characters consisting only of the characters of the
   base64url alphabet ({{Section 5 of RFC4648}}): "A" to "Z", "a" to
   "z", "0" to "9", "-", and "_".  Its length MUST NOT exceed the
   "maxIdLength" limit of the recipient of the request (see
-  {{capabilities-document}}).  The sender SHOULD include at least 128
-  bits of randomness, for example 16 random octets encoded in
-  base64url without padding, which yields 22 characters.  A request
-  whose Transfer Identifier does not meet these requirements is
-  rejected with the "invalid-request" problem type.
+  {{capabilities-document}}).  The sender MUST generate the Transfer
+  Identifier with at least 128 bits of randomness, for example from
+  16 random octets encoded in base64url without padding, which yields
+  22 characters.  A request whose Transfer Identifier does not meet
+  the requirements on its length and characters is rejected with the
+  "invalid-request" problem type.
 
   A Transfer Identifier is not globally unique and is never
   interpreted on its own.  The recipient of a request stores and
@@ -1082,14 +1083,20 @@ id:
     verification procedure ({{verification}}).  The host name and IP
     address of the Sending Server are not part of the scope, so that
     a retry is recognized even if it is sent from another host of the
-    same Sending Domain;
+    same Sending Domain.  Neither is the selector of the key, so that
+    a retry is recognized even if it is signed with a new key after a
+    key rollover;
   - for a submission request, the account of the authenticated
     Client.
 
   The sender MUST generate Transfer Identifiers that are unique
   within their scope.  Identical Transfer Identifiers in different
   scopes, for example from two different Sending Domains, identify
-  unrelated requests.
+  unrelated requests.  Several independent senders can share one
+  scope, for example a domain and an email service provider to which
+  it has delegated a selector ({{third-party}}).  The randomness of
+  Transfer Identifiers ensures that the identifiers of such senders
+  do not collide without any coordination between them.
 
 from:
 : REQUIRED.  The Envelope Sender.  The value is either a "Mailbox" as
@@ -3697,6 +3704,9 @@ request to be suppressed as a duplicate without being able to sign
 requests for the same scope.  For the same reason, the results of an
 earlier request that accompany the "id-conflict" problem type
 ({{idempotency}}) are disclosed only to a sender in the same scope.
+Within a scope that is shared by several senders, such as a domain and
+its email service providers, the randomness of Transfer Identifiers
+also prevents one sender from predicting the identifiers of another.
 The limit on the length of Transfer Identifiers bounds the storage
 that a Receiving Server needs for them.
 
