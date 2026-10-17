@@ -2783,6 +2783,40 @@ tls-required:
   satisfied on the path to the recipient.  The enhanced status code
   is defined in {{RFC8689}}.
 
+### Mapping from SMTP Replies {#smtp-reverse-mapping}
+
+{{tab-mapping}} maps problem types to SMTP replies.  A server that
+forwards a Message over SMTP, for example after a fallback
+({{smtp-fallback}}) or to an SMTP server of the recipient domain
+({{coexistence}}), receives SMTP replies instead of problem details
+objects.  When it reports a failure that it received in an SMTP reply
+in a problem details object, for example in a delivery status report
+({{reports}}) or in its own response to an HMTP request, it
+constructs the problem details object as follows:
+
+- The "smtpStatus" member contains the enhanced status code of the
+  reply.  If the reply does not contain an enhanced status code, for
+  example because the SMTP server does not support the
+  ENHANCEDSTATUSCODES extension {{RFC2034}}, it contains "4.0.0" or
+  "5.0.0", according to the first digit of the reply code.
+
+- The "smtpReply" member contains the reply code.
+
+- The "detail" member contains the text of the reply, without the
+  reply code and the enhanced status code.
+
+- If {{tab-mapping}} lists the enhanced status code for a problem
+  type with the scope "Recipient" or "Both", the "type" member
+  identifies that problem type, for example
+  "urn:ietf:params:hmtp:error:unknown-recipient" for the code 5.1.1.
+  Otherwise, the "type" member contains "about:blank"
+  ({{Section 4.2.1 of RFC9457}}), and the failure is described only
+  by the other members.
+
+A reply that applies to all Envelope Recipients, such as a rejection
+of the MAIL FROM or DATA command, is reported in this way for each of
+them.
+
 ## Delivery Status Notifications {#dsn}
 
 When a Message cannot be delivered after it has been accepted, or when
@@ -3067,8 +3101,10 @@ problem:
   has the class 5 if the failure is permanent, or the class 4 if the
   reporting server has given up after a persistent temporary failure,
   as described in {{dsn}}.  The action, not the class, determines
-  whether the reporting server makes further delivery attempts.  For
-  the actions "delivered", "relayed", and "expanded", the enhanced
+  whether the reporting server makes further delivery attempts.  If
+  the failure was reported by an SMTP server, the problem details
+  object is constructed as described in {{smtp-reverse-mapping}}.
+  For the actions "delivered", "relayed", and "expanded", the enhanced
   status code is "2.0.0".
 
 remoteServer:
@@ -3285,6 +3321,11 @@ specified in {{RFC5321}}, with the following requirements:
 - If the SMTP server does not support the DSN extension, the Sending
   Server behaves as specified in {{RFC3461}} for relaying to a server
   that does not support it.
+
+- Where a failure reported by the SMTP server needs to be expressed as
+  a problem details object, for example in a delivery status report,
+  the Sending Server constructs it as described in
+  {{smtp-reverse-mapping}}.
 
 - It SHOULD use STARTTLS {{RFC3207}} and SHOULD apply MTA-STS
   {{RFC8461}} or DANE {{RFC7672}} when the domain publishes them.
