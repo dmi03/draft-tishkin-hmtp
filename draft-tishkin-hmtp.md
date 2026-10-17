@@ -2209,7 +2209,7 @@ An Identity Object is a JSON object with the following members:
 
 email:
 : REQUIRED.  An address that the Client may use.  If the local part of
-  the address is the single character "*", as in "*@example.org",
+  the address is the single character "\*", as in "\*@example.org",
   the Client may use any address in that domain, following the
   convention of {{Section 6 of RFC8621}}.
 
