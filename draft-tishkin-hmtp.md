@@ -875,9 +875,10 @@ versions:
     {{iana-endpoints}}.
 
 limits:
-: OPTIONAL.  A JSON object describing limits of the server.  All
-  values are non-negative integers.  This document defines the
-  following members:
+: OPTIONAL.  A JSON object describing limits of the server, which
+  apply to all of its endpoints unless an Endpoint Object specifies
+  other values ({{endpoint-objects}}).  All values are non-negative
+  integers.  This document defines the following members:
 
   - "maxMessageSize": the maximum size of a Message in octets, after
     the reconstruction of all segments described in
@@ -895,7 +896,10 @@ limits:
 
   The absence of any other limit means that the server does not
   advertise it; the server can still reject a request that exceeds a
-  limit it applies, as described in {{problem-details}}.
+  limit it applies, as described in {{problem-details}}.  Where this
+  document refers to a limit of a server or of the recipient of a
+  request, it means the value that applies to the endpoint to which
+  the request is sent.
 
 policy:
 : OPTIONAL.  A JSON object that expresses the downgrade policy of the
@@ -915,12 +919,24 @@ not understand.
 
 An Endpoint Object is a JSON object that describes one endpoint and
 the parameters that apply to it.  Every Endpoint Object contains the
-following member:
+following members:
 
 uri:
 : REQUIRED.  The URI of the endpoint.  The URI MUST use the "https"
   scheme and MAY be relative, in which case it is resolved against
   the URI of the Capabilities Document {{RFC3986}}.
+
+limits:
+: OPTIONAL.  A JSON object with the same members as the "limits"
+  member of the Capabilities Document ({{capabilities-document}}).
+  Its members apply to requests sent to the endpoints described by
+  the Endpoint Object, including related endpoints such as "reports"
+  and "identities".  For each limit, a value given in the Endpoint
+  Object takes precedence over the value in the "limits" member of
+  the Capabilities Document; if neither contains the limit, the
+  default described there applies.  This allows a server, for
+  example, to apply different limits to submission by its own users
+  and to transfer from other domains.
 
 Requests do not carry the version of HMTP that they use.  Instead,
 the version of a request is determined by the endpoint to which it is
@@ -1019,7 +1035,10 @@ Cache-Control: max-age=86400
           "identities": "/hmtp/v1/identities",
           "authentication": ["basic", "bearer"],
           "oauthResourceMetadata":
-            "/.well-known/oauth-protected-resource"
+            "/.well-known/oauth-protected-resource",
+          "limits": {
+            "maxRecipients": 100
+          }
         }
       }
     }
@@ -1037,6 +1056,10 @@ Cache-Control: max-age=86400
   "capabilities": {}
 }
 ~~~
+
+In this example, a submission request can contain at most 100
+Envelope Recipients, while a transfer request can contain up to 1000.
+The other limits apply to both endpoints.
 
 # Data Model {#data-model}
 
