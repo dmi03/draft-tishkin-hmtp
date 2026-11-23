@@ -3749,6 +3749,18 @@ The rule that temporary failures never cause a fallback to SMTP
 ({{when-to-fall-back}}) prevents an attacker from forcing a downgrade
 by blocking HTTPS connections.
 
+The same exposure applies to key records.  The Sending Domain is
+established by the key record that the Receiving Server retrieves
+from DNS ({{signing-keys}}).  If DNS responses are not
+authenticated, an attacker who can modify the responses seen by a
+Receiving Server can substitute a key record that it controls, and
+sign requests that the Receiving Server accepts as originating from
+the legitimate Sending Domain, including their alignment with the
+Envelope Sender ({{alignment}}).  This is the exposure of DKIM
+{{RFC6376}} to forged key records.  The recommendations above,
+DNSSEC signing and validation, therefore also apply to the retrieval
+of key records.
+
 ## Signatures and Replay {#security-replay}
 
 Signatures cover the method, the target URI, the media type, and the
