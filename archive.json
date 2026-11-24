@@ -1,6 +1,6 @@
 {
   "magic": "E!vIA5L86J2I",
-  "timestamp": "2026-11-22T04:56:50.259145+00:00",
+  "timestamp": "2026-11-24T08:16:32.571610+00:00",
   "repo": "dmi03/draft-tishkin-hmtp",
   "labels": [
     {
@@ -54,6 +54,50 @@
       "color": "ffffff"
     }
   ],
-  "issues": [],
-  "pulls": []
+  "issues": [
+    {
+      "number": 2,
+      "id": "I_kwDOUwvZ1s8AAAABh28duQ",
+      "title": "Abuse and Reputation: proof-of-work capability, and abuse reports",
+      "url": "https://github.com/dmi03/draft-tishkin-hmtp/issues/2",
+      "state": "OPEN",
+      "author": "Guillaume0001",
+      "authorAssociation": "NONE",
+      "assignees": [],
+      "labels": [],
+      "body": "Section 12 leaves reputation to local policy, and Section 12.6 notes that a structured abuse-report endpoint identifies which domain is responsible for a request, not that the request is legitimate, and new domains are cheap. I would like to propose an anti-abuse capability and discuss whether it belongs in this draft or in a separate extension.\n\nSketch (two parts, which could be split):\n\n1. **Proof-of-work stamps**\n    -  A stamp per Envelope Recipient, bound to the Sending Domain, the recipient and the Transfer Identifier. Because retries reuse the same Transfer Identifier, a retry can reuse the same stamp.\n    - The required difficulty is advertised in the Capabilities Document, and can be higher for domains without history (Section 12.2 already suggests caution toward them).\n    - Optionally, a reply token that the sender includes so that a recipient can answer without a stamp, which keeps conversations free.\n    - A new problem type (\"stamp required\"), registered in the HMTP Problem Types registry.\n    - Not must-understand: servers that do not know it ignore it, and it is not forwarded over SMTP (Section 10.1).\n\n2. **Signed abuse reports**\n    - A \"reports\"-style endpoint for complaints, signed like other requests and correlated with a Message the recipient domain sent. Existing ARF reports are sent as ordinary Messages today.\n\nKnown limits: proof-of-work is a brake rather than a wall (see Laurie and Clayton, \"Proof-of-Work Proves Not to Work\"), and low-power legitimate senders pay the same cost as spammers unless the difficulty adapts.\n\nOpen questions:\n- *Base draft, appendix, or separate extension?*\n- *Is a new problem type acceptable,  or should \"policy-rejected\" be reused?*\n- *Is proof-of-work worth it compared to reputation and abuse reports alone?*\n- *Cost per recipient, or per request?*\n\nI can write the text if this direction is of interest.",
+      "createdAt": "2026-11-23T19:30:11Z",
+      "updatedAt": "2026-11-23T19:30:11Z",
+      "closedAt": null,
+      "comments": []
+    }
+  ],
+  "pulls": [
+    {
+      "number": 1,
+      "id": "PR_kwDOUwvZ1s8AAAABRWtWWA",
+      "title": "Security Considerations: forged DNS key records",
+      "url": "https://github.com/dmi03/draft-tishkin-hmtp/pull/1",
+      "state": "OPEN",
+      "author": "Guillaume0001",
+      "authorAssociation": "NONE",
+      "assignees": [],
+      "labels": [],
+      "body": "Adds a paragraph to the \"DNS and Downgrade Attacks\" section about forged key records, as discussed by email.\n\nThe section currently covers forged SCVB records and downgrade. Since the Sending Domain is established by the key record retrieved from DNS, an attacker who can modify the DNS responses seen by a Receiving Server could also substitute a key record and sign requests as the legitimate Sending Domain. The new paragraph states this exposure, notes that it is the same as the exposure of DKIM, and says that the existing DNSSEC recommendations also apply to key retrieval.\n\nNo new normative keyword is introduced. Feedback on the wording is welcome, and I'm happy to adjust it.",
+      "createdAt": "2026-11-23T19:17:43Z",
+      "updatedAt": "2026-11-23T19:17:43Z",
+      "baseRepository": "dmi03/draft-tishkin-hmtp",
+      "baseRefName": "main",
+      "baseRefOid": "4bd4c3abc601afd57d73a0d564a9c61fc6887250",
+      "headRepository": "Guillaume0001/draft-tishkin-hmtp",
+      "headRefName": "main",
+      "headRefOid": "ffa4288bca3aced714af3906f4742c25a74e3ada",
+      "closedAt": null,
+      "mergedAt": null,
+      "mergedBy": null,
+      "mergeCommit": null,
+      "comments": [],
+      "reviews": []
+    }
+  ]
 }
